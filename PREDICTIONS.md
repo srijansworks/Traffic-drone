@@ -54,3 +54,15 @@ when the tip is 10 min old (currently ~21%).
 > rewritten once before the run. Future predictions should be mine.
 
 ---
+
+## Ring search vs smart search
+
+**Date:** 2026-10-03
+**Command:** `python search_sim.py`
+**I predict (my words):** "I think that the smart search isn't something with an absurd
+improvement in findings, but I think it will beat it by 5%."
+Meaning: at a 10 min old tip, smart search finds about 5 percentage points more boats
+than ring search (so if smart is ~22%, ring is ~17%).
+**Because:** Ring search also knows the boat has moved, so smart search shouldn't have a
+huge edge.
+
