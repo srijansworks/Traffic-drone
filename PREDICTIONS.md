@@ -92,3 +92,14 @@ Surprise: smart search does NOT always win.
   from one lucky set of guesses.
 
 ---
+
+## Smart search with a wrong guess about boat speed
+
+**Date:** 2026-10-03
+**Command:** `python search_sim.py --assumed-speed-kn 10 30 --boat-speed-kn 0 40`
+**I predict (my words):** "maybe around 17-20"
+Meaning: at a 10 min old tip, smart search finds 17–20 out of 100 boats when it wrongly
+thinks boats go 10–30 knots but they really go 0–40 (it found ~22 when its guess was right).
+**Because:** Some boats will be slower or faster than it expects, so it searches in
+slightly the wrong places.
+
