@@ -205,3 +205,48 @@ Meaning, at a 10 min old tip with 3 drones (plain shared map got 49.8%):
 3. With the wrong speed guess (thinks 10–30 kn, really 0–40): 45%. (I gave one number;
    recording it for both the plain shared map and guard-plus-smart.)
 
+**Actual:** (3 drones, 2,000 boats per test)
+
+Right speed guess (results_combos/):
+
+| Tip age | Shared map | Ring-then-smart | Guard-plus-smart |
+|---|---|---|---|
+| 5 min | 87.0% | 81.7% | 76.4% |
+| 10 min | 49.8% | 48.6% | 36.6% |
+| 30 min | 15.6% | 17.2% | 11.1% |
+
+Wrong speed guess, thinks 10–30 kn, really 0–40 (results_combos_wrong_guess/), with the
+same boats and the RIGHT guess for comparison (results_combos_right_guess_0_40/):
+
+| Tip age | Shared, right guess | Shared, wrong guess | Guard, wrong guess | Standard ×3 |
+|---|---|---|---|---|
+| 2 min | 98.2% | 78.6% | 78.0% | 79.3% |
+| 10 min | 44.2% | 43.4% | 39.1% | 23.8% |
+| 30 min | 21.6% | 15.2% | 18.4% | 13.7% |
+
+1. Ring-then-smart: 48.6% (I guessed 57, better). It basically TIED the plain shared map
+   (49.8%, the ranges overlap). Wrong.
+2. Guard-plus-smart, right guess: 36.6% (I guessed 55). It did WORSE. Wrong.
+3. Wrong guess: shared map 43.4%, guard 39.1% (I guessed 45). Close for the shared map;
+   the guard came in lower.
+
+**What I learned:**
+- Combining ideas doesn't automatically make things better. Both combos lost or tied.
+- Ring-then-smart tied because the shared-map smart search already heads outward to where
+  the boats are. Forcing a straight dash first didn't add anything, and with a fresh tip
+  (5 min) it actually cost a few points (81.7 vs 87.0).
+- The guard lost when the speed guess was right because there was nothing for it to find:
+  every boat goes at least 10 knots, so after 10 min no boat is still near the tip
+  location. That's one drone out of three wasted, so the team was really just 2 searchers.
+- The guard only paid off in one case: wrong speed guess AND an old tip. At 30 min it
+  beat the plain shared map (18.4 vs 15.2, the ranges barely don't overlap). That's the
+  stopped-boat weak spot I found before, and the guard partly fixes it, but only late.
+- Big surprise: with 3 drones, the wrong speed guess barely hurt at 10 min (44.2 vs 43.4).
+  But with a fresh 2 min tip it hurt a LOT (98.2 down to 78.6), and the guard didn't help
+  there. So those misses probably aren't the stopped boats. My guess: they're the fast
+  boats (30–40 kn) that got farther than the searchers expected. I should check which
+  boats get missed instead of guessing.
+- Best plan so far is still the plain shared map. If I'm unsure how boats move, giving
+  the search a wider speed guess on purpose is probably better than adding a guard.
+
+---
