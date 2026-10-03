@@ -16,7 +16,9 @@
   --s1: #2a78d6;
   --s2: #eb6834;
   --s3: #1baf7a;
-  --s4: #4a3aa7;
+  --s4: #eda100;
+  --s5: #e34948;
+  --s6: #4a3aa7;
   --focus: #2a78d6;
   --display: "Barlow Condensed", "Arial Narrow", "Helvetica Neue", sans-serif;
   --body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
@@ -37,7 +39,9 @@
     --s1: #3987e5;
     --s2: #d95926;
     --s3: #199e70;
-    --s4: #9085e9;
+    --s4: #c98500;
+    --s5: #e66767;
+    --s6: #9085e9;
     --focus: #6aa8ef;
   }
 }
@@ -55,7 +59,9 @@
   --s1: #3987e5;
   --s2: #d95926;
   --s3: #199e70;
-  --s4: #9085e9;
+  --s4: #c98500;
+  --s5: #e66767;
+  --s6: #9085e9;
   --focus: #6aa8ef;
 }
 
@@ -269,13 +275,17 @@ td small { color: var(--muted); }
   <header>
     <div class="eyebrow">Drone search simulation · satellite tip to boat found</div>
     <h1>A satellite spots a boat. By the time the drone gets there, the boat has moved.</h1>
-    <p class="lede">Pick how old the tip is when the drone arrives, then press play. Every dot is a place the boat could really be. A dot lights up when a drone spots it. Every panel, in both the 1-drone and 3-drone modes, hunts the same 300 boats.</p>
+    <p class="lede">Pick how old the tip is when the drone arrives, then press play. Every dot is a place the boat could really be. A dot lights up when a drone spots it. Every panel and every team hunts the same 300 boats. Switch "Boat speed guess" to see what happens when the searchers are told the wrong boat speeds.</p>
   </header>
 
   <div class="controls" aria-label="Playback controls">
     <div class="group">
-      <span class="label" id="modelbl">Drones per strategy</span>
+      <span class="label" id="modelbl">Team</span>
       <div class="seg" role="group" aria-labelledby="modelbl" id="modes"></div>
+    </div>
+    <div class="group">
+      <span class="label" id="scenlbl">Boat speed guess</span>
+      <div class="seg" role="group" aria-labelledby="scenlbl" id="scens"></div>
     </div>
     <div class="group">
       <span class="label" id="agelbl">Tip age on arrival</span>
@@ -306,7 +316,7 @@ td small { color: var(--muted); }
   <div class="key" aria-hidden="false">
     <span><svg width="14" height="14"><circle cx="7" cy="7" r="2.2" fill="var(--boat)"/></svg>Possible boat, not seen yet</span>
     <span><svg width="14" height="14"><circle cx="7" cy="7" r="3.6" fill="var(--ink-2)"/></svg>Spotted (in that drone's colour)</span>
-    <span><svg width="22" height="14"><line x1="1" y1="7" x2="21" y2="7" stroke="var(--ink-2)" stroke-width="1.4" stroke-dasharray="3 3"/></svg>How far the boat could have gone (10–30 knots)</span>
+    <span><svg width="22" height="14"><line x1="1" y1="7" x2="21" y2="7" stroke="var(--ink-2)" stroke-width="1.4" stroke-dasharray="3 3"/></svg><span id="ringkey">How far the boat could have gone</span></span>
     <span><svg width="14" height="14"><path d="M7 2v10M2 7h10" stroke="var(--ink)" stroke-width="1.6"/></svg>Where the satellite saw it</span>
   </div>
 
@@ -349,25 +359,30 @@ td small { color: var(--muted); }
       3: ["Smart, separate ×3", "Three smart drones that don't tell each other where they've looked."] },
     greedy_shared: { c: "--s3",
       3: ["Smart, shared map ×3", "Three smart drones that cross off water for each other and split up."] },
+    ring_then_smart: { c: "--s5",
+      3: ["Ring, then smart ×3", "Dash straight out to the ring first, then switch to the shared map."] },
+    guard_plus_smart: { c: "--s6",
+      3: ["Guard + smart ×3", "One drone squares the tip spot for stopped boats; two search with the shared map."] },
   };
   const A = D.assumptions;
   const END_S = A.endurance_min * 60;
-  const VMIN = A.boat_speed_kn[0] * KNOT_KMS, VMAX = A.boat_speed_kn[1] * KNOT_KMS;
   const DASHES = [[], [7, 4], [2, 3]];
 
-  let modeIdx = 0;
+  let scenIdx = 0, modeIdx = 0;
   let ageIdx = Math.max(0, D.ages_min.indexOf(10));
   let t = 0, playing = false, last = null;
   const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   const $ = id => document.getElementById(id);
   const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-  const mode = () => D.modes[modeIdx];
+  const scen = () => D.scenarios[scenIdx];
+  const mode = () => scen().modes[modeIdx];
+  const vmin = () => scen().truth_kn[0] * KNOT_KMS, vmax = () => scen().truth_kn[1] * KNOT_KMS;
   const S = () => mode().strategies;
   const nameOf = key => META[key][mode().drones][0];
   const noteOf = key => META[key][mode().drones][1];
   const pb = () => mode().playback[ageIdx];
-  const boats = () => D.boats[ageIdx];
+  const boats = () => scen().boats[ageIdx];
   const ageMin = () => D.ages_min[ageIdx];
   const arrival = () => ageMin() * 60;
   const total = () => arrival() + END_S;
@@ -410,11 +425,13 @@ td small { color: var(--muted); }
       container.appendChild(b);
     });
   }
-  seg($("modes"), D.modes.map(m => [`mode-${m.drones}`, `${m.drones}`]), modeIdx, i => {
-    modeIdx = i; playing = false;
-    buildPanels(); buildChart();
+  function rebuild() {
+    playing = false;
+    buildPanels(); buildChart(); buildAssumptions();
     setTime(Math.min(t, total()));
-  });
+  }
+  seg($("modes"), D.scenarios[0].modes.map(m => [`mode-${m.id}`, m.label]), modeIdx, i => { modeIdx = i; rebuild(); });
+  seg($("scens"), D.scenarios.map(sc => [`scen-${sc.id}`, sc.label]), scenIdx, i => { scenIdx = i; rebuild(); });
   seg($("ages"), D.ages_min.map(a => [`age-${a}`, `${a} min`]), ageIdx, i => {
     ageIdx = i; playing = false;
     setTime(Math.min(arrival() + 20 * 60, total()));
@@ -432,7 +449,7 @@ td small { color: var(--muted); }
     return [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k];
   }
   function viewRadius(tt) {
-    let r = VMAX * tt + 0.4;
+    let r = vmax() * tt + 0.4;
     const s = tt - arrival();
     if (s > 0) for (const key of S()) for (const path of pb().runs[key].paths) {
       const n = Math.min(Math.floor(s / D.path_every_s), path.length - 1);
@@ -478,7 +495,7 @@ td small { color: var(--muted); }
       }
 
       ctx.setLineDash([4, 4]); ctx.strokeStyle = col.muted; ctx.lineWidth = 1.2;
-      for (const r of [VMIN * tt, VMAX * tt]) if (r * k > 2) {
+      for (const r of [vmin() * tt, vmax() * tt]) if (r * k > 2) {
         ctx.beginPath(); ctx.arc(cx, cy, r * k, 0, Math.PI * 2); ctx.stroke();
       }
       ctx.setLineDash([]);
@@ -581,7 +598,7 @@ td small { color: var(--muted); }
 
   function buildChart() {
     const curve = mode().curve, keys = S(), ages = curve[keys[0]].map(d => d.age_min);
-    $("res-mode").textContent = mode().drones > 1 ? `(${mode().drones} drones each)` : "(1 drone each)";
+    $("res-mode").textContent = `(${mode().label.toLowerCase()}, ${scen().label.toLowerCase()})`;
     const svg = $("chart"); svg.innerHTML = "";
     for (const p of [0, .25, .5, .75, 1]) {
       mk("line", { x1: M.l, x2: W - M.r, y1: ys(p), y2: ys(p), stroke: css("--rule"), "stroke-width": 1 }, svg);
@@ -649,17 +666,24 @@ td small { color: var(--muted); }
     if (m) { m.setAttribute("x1", xs(ageMin())); m.setAttribute("x2", xs(ageMin())); }
   }
 
-  const mph = Math.round(A.drone_speed_ms * 2.23694);
-  $("assume").innerHTML = [
-    ["Drone speed", `${A.drone_speed_ms} m/s`, `about ${mph} mph, like a fixed-wing`],
-    ["Drone can spot a boat within", `${A.sweep_radius_km} km`, "a guess; the biggest unknown"],
-    ["Search time on station", `${A.endurance_min} min`, "after reaching the tip location"],
-    ["Boat speed", `${A.boat_speed_kn[0]}–${A.boat_speed_kn[1]} knots`, "random, straight course"],
-    ["Satellite position error", `±${A.cue_error_m} m`, "one standard deviation"],
-  ].map(([k, v, n]) => `<div><dt>${k}</dt><dd>${v}<small>${n}</small></dd></div>`).join("");
+  function buildAssumptions() {
+    const mph = Math.round(A.drone_speed_ms * 2.23694);
+    const [t0, t1] = scen().truth_kn, [a0, a1] = scen().assumed_kn;
+    const wrong = t0 !== a0 || t1 !== a1;
+    $("ringkey").textContent = `How far the boat could have gone (${t0}–${t1} knots)`;
+    $("assume").innerHTML = [
+      ["Drone speed", `${A.drone_speed_ms} m/s`, `about ${mph} mph, like a fixed-wing`],
+      ["Drone can spot a boat within", `${A.sweep_radius_km} km`, "a guess; the biggest unknown"],
+      ["Search time on station", `${A.endurance_min} min`, "after reaching the tip location"],
+      ["Real boat speed", `${t0}–${t1} knots`, "random, straight course"],
+      ["Searchers think boats go", `${a0}–${a1} knots`, wrong ? "wrong on purpose: some boats stop or go faster" : "matches the real boats"],
+      ["Satellite position error", `±${A.cue_error_m} m`, "one standard deviation"],
+    ].map(([k, v, n]) => `<div><dt>${k}</dt><dd>${v}<small>${n}</small></dd></div>`).join("");
+  }
 
   buildPanels();
   buildChart();
+  buildAssumptions();
   // Open at rest mid-search so the first look shows what the demo does.
   setTime(arrival() + 20 * 60);
 })();
