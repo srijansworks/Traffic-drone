@@ -21,6 +21,11 @@ def time_to_find(path, boats, sweep_radius_m, chunk=500):
     return out
 
 
+def team_time_to_find(paths, boats, sweep_radius_m):
+    """Like time_to_find, but for several drones: found when the FIRST one sees it."""
+    return np.min([time_to_find(p, boats, sweep_radius_m) for p in paths], axis=0)
+
+
 def _slice(boats, sl):
     return type(boats)(offset=boats.offset[sl], velocity=boats.velocity[sl])
 

@@ -12,9 +12,10 @@ import numpy as np
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from cuesearch.evaluate import time_to_find, wilson  # noqa: E402
+from cuesearch.evaluate import team_time_to_find, time_to_find, wilson  # noqa: E402
 from cuesearch.model import KNOT, BoatPrior, Boats, Drone  # noqa: E402
 from cuesearch.planners import expanding_square, probability_greedy, ring_search  # noqa: E402
+from cuesearch.team import greedy_shared, ring_team, rotate, square_team  # noqa: E402
 
 FAILURES = []
 
@@ -132,6 +133,41 @@ def test_time_to_find():
     check("chunk size doesn't change results", np.array_equal(a, b))
 
 
+def test_team():
+    print("drone teams")
+    drone = Drone(speed_ms=45, sweep_radius_m=1000, endurance_s=900)
+    prior = BoatPrior()
+
+    v1 = probability_greedy(300, drone, prior, n_particles=400, seed=5)
+    solo = greedy_shared(300, drone, prior, 1, n_particles=400, seed=5)
+    check("shared-map team of 1 flies exactly the v1 smart search path",
+          len(solo) == 1 and np.allclose(solo[0].xy, v1.xy))
+
+    team = greedy_shared(300, drone, prior, 3, n_particles=400, seed=5)
+    steps = np.concatenate([np.linalg.norm(np.diff(p.xy, axis=0), axis=1) for p in team])
+    check("shared-map drones fly at drone speed", steps.max() <= 90 + 1e-6)
+    gaps = [np.linalg.norm(team[a].xy[-1] - team[b].xy[-1]) for a, b in [(0, 1), (0, 2), (1, 2)]]
+    check("shared-map drones split up instead of flying together", min(gaps) > 2000,
+          f"closest pair {min(gaps):.0f} m apart at the end")
+
+    sq = expanding_square(0, drone)
+    turned = rotate(sq, np.pi / 2)
+    check("rotating 90 degrees turns east into north", np.allclose(turned.xy[10], [0, sq.xy[10][0]]))
+
+    rings = ring_team(600, drone, prior, 3)
+    ang = [np.degrees(np.arctan2(p.xy[-1][1], p.xy[-1][0])) for p in rings]
+    diffs = sorted((a - ang[0]) % 360 for a in ang[1:])
+    check("ring team is spread evenly (120 degrees apart)", np.allclose(diffs, [120, 240], atol=1e-6),
+          f"{diffs}")
+    check("square team has one path per drone", len(square_team(0, drone, 4)) == 4)
+
+    rng = np.random.default_rng(9)
+    boats = prior.sample(300, rng)
+    each = [time_to_find(p, boats, 1000) for p in rings]
+    check("team finds a boat when its FIRST drone does",
+          np.array_equal(team_time_to_find(rings, boats, 1000), np.min(each, axis=0)))
+
+
 def test_wilson():
     print("confidence interval")
     lo, hi = wilson(0, 10)
@@ -149,6 +185,7 @@ if __name__ == "__main__":
     test_greedy_is_deterministic()
     test_greedy_sweeps_guesses()
     test_time_to_find()
+    test_team()
     test_wilson()
     print()
     if FAILURES:

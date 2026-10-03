@@ -14,7 +14,7 @@ import os
 
 import numpy as np
 
-from cuesearch.evaluate import time_to_find, wilson
+from cuesearch.evaluate import team_time_to_find, wilson
 from cuesearch.model import BoatPrior, Drone
 from search_sim import STRATEGIES, plan
 
@@ -37,8 +37,9 @@ def main():
         boats = prior.sample(BOATS_SHOWN, rng)
         runs = {}
         for name in STRATEGIES:
-            path = plan(name, age * 60, drone, prior, seed=SEED + 1000)
-            found = time_to_find(path, boats, drone.sweep_radius_m)
+            team = plan(name, age * 60, drone, prior, seed=SEED + 1000)
+            path = team[0]   # the demo shows one drone per strategy
+            found = team_time_to_find(team, boats, drone.sweep_radius_m)
             runs[name] = {
                 "path": np.round(path.xy[::keep] / 1000, 3).tolist(),      # km
                 "found_s": [None if np.isinf(t) else float(t) for t in found],
@@ -55,8 +56,8 @@ def main():
     for age in CURVE_AGES_MIN:
         boats = prior.sample(CURVE_TRIALS, rng)
         for name in STRATEGIES:
-            path = plan(name, age * 60, drone, prior, seed=SEED + 1000)
-            k = int(np.isfinite(time_to_find(path, boats, drone.sweep_radius_m)).sum())
+            team = plan(name, age * 60, drone, prior, seed=SEED + 1000)
+            k = int(np.isfinite(team_time_to_find(team, boats, drone.sweep_radius_m)).sum())
             lo, hi = wilson(k, CURVE_TRIALS)
             curve[name].append({"age_min": age, "found": k, "trials": CURVE_TRIALS,
                                 "p": k / CURVE_TRIALS, "lo": lo, "hi": hi})
