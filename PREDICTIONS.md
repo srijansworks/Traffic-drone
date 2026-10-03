@@ -66,3 +66,29 @@ than ring search (so if smart is ~22%, ring is ~17%).
 **Because:** Ring search also knows the boat has moved, so smart search shouldn't have a
 huge edge.
 
+**Actual:** At a 10 min old tip, smart search found 21.9% of boats and ring search
+found 14.8%. Smart search won by about 7 points, a bit more than my guess of 5.
+The ranges (95% CI) don't overlap (smart 20.1–23.8%, ring 13.3–16.4%), so the win
+is real, not luck. (2,000 boats per test.)
+
+Surprise: smart search does NOT always win.
+- 2 min old tip: ring search found MORE (85.1% vs 81.8%).
+- 4 to 20 min old tip: smart search wins (biggest gap around 8–20 min).
+- 30+ min old tip: they're almost tied, and both find fewer than 6 out of 100 boats.
+
+**What I learned:**
+- My guess was close. Smart search is better, but not by a crazy amount. It beat
+  ring search by about 7 points, not 5.
+- Another way to say it: at 10 min, smart search finds about half again as many
+  boats (22 vs 15 out of 100).
+- The "best" search depends on how old the tip is. When the tip is super fresh,
+  just flying out and circling (ring search) works slightly better. Smart search
+  only pulls ahead once the boat has had time to get far away.
+- When the tip is really old (30+ min), how you search barely matters. The boat
+  could be in too big an area for any one drone to cover.
+- So the biggest win isn't a smarter search. It's getting the tip to the drone faster.
+- One thing to check next: smart search plans its path using random guesses. I
+  should rerun with a different `--seed` to make sure the 7-point win isn't just
+  from one lucky set of guesses.
+
+---
