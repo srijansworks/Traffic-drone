@@ -15,13 +15,23 @@ greedy_shared      -- one shared map of guesses. Every 30 s the drones pick
                       different ones. Water any drone checks is crossed off
                       for everyone.
 
+Combos (built on greedy_shared):
+
+ring_then_smart    -- drones first dash straight out to the ring on evenly
+                      spaced headings (fast, like ring search), then switch to
+                      shared-map smart search.
+guard_plus_smart   -- one drone stays home and flies the standard square around
+                      the tip location, catching boats that stopped or went
+                      slow. The rest run shared-map smart search, and the
+                      guard's sweeps cross off water on the shared map too.
+
 The difference between the last two is the experiment: does sharing a map
 matter, or do three drones do just as well searching separately?
 """
 
 import numpy as np
 
-from .model import SearchPath
+from .model import KNOT, SearchPath
 from .planners import _n_steps, expanding_square, probability_greedy, ring_search
 
 
@@ -55,9 +65,16 @@ def greedy_independent(cue_age_s, drone, prior, n_drones, dt=2.0, seed=0, **kw):
 
 def greedy_shared(cue_age_s, drone, prior, n_drones, dt=2.0, n_particles=2000,
                   n_headings=16, replan_s=30.0, lookahead_s=120.0,
-                  lookahead_dt=10.0, seed=0):
-    """Smart search with one shared map. With n_drones=1 this flies exactly
-    the same path as v1 probability_greedy (a test checks that)."""
+                  lookahead_dt=10.0, seed=0, dash_to_ring=False, fixed_paths=()):
+    """Smart search with one shared map. With n_drones=1 (and no options) this
+    flies exactly the same path as v1 probability_greedy (a test checks that).
+
+    dash_to_ring: each drone first flies straight out on its own evenly spaced
+                  heading until it reaches the ring the boat is probably on
+                  (average assumed speed x time), then joins the smart search.
+    fixed_paths:  pre-planned paths of other drones (e.g. a guard). They don't
+                  make decisions, but whatever they sweep is crossed off the map.
+    """
     rng = np.random.default_rng(seed)
     particles = prior.sample(n_particles, rng)
     alive = np.ones(n_particles, dtype=bool)
@@ -99,14 +116,28 @@ def greedy_shared(cue_age_s, drone, prior, n_drones, dt=2.0, n_particles=2000,
         v = target[i] - pos
         return v / (np.linalg.norm(v) + 1e-9), idx[[i]]
 
+    v_ring = float(np.mean(prior.speed_kn)) * KNOT
+
+    def still_dashing(p, t):
+        return dash_to_ring and drone.speed_ms > v_ring and np.linalg.norm(p) < v_ring * t
+
     pos = np.zeros((n_drones, 2))
     for j in range(n_drones):
         sweep(pos[j], times[0])
-    headings = np.tile(dirs[0], (n_drones, 1))
+    for fp in fixed_paths:
+        sweep(fp.xy[0], times[0])
+    if dash_to_ring:
+        spread = 2 * np.pi * np.arange(n_drones) / n_drones
+        headings = np.stack([np.cos(spread), np.sin(spread)], axis=1)
+    else:
+        headings = np.tile(dirs[0], (n_drones, 1))
+    dashing = np.array([still_dashing(pos[j], times[0]) for j in range(n_drones)])
     k = 0
     while k < n_steps - 1:
         claimed = np.zeros(n_particles, dtype=bool)
         for j in range(n_drones):
+            if dashing[j]:
+                continue
             chosen, mine = choose_heading(pos[j], times[k], claimed)
             if chosen is not None:
                 headings[j] = chosen
@@ -119,5 +150,24 @@ def greedy_shared(cue_age_s, drone, prior, n_drones, dt=2.0, n_particles=2000,
             xy[:, k] = pos
             for j in range(n_drones):
                 sweep(pos[j], times[k])
+            for fp in fixed_paths:
+                sweep(fp.xy[k], times[k])
+            was = dashing.copy()
+            dashing = np.array([was[j] and still_dashing(pos[j], times[k]) for j in range(n_drones)])
+            if (was & ~dashing).any():
+                break   # someone just reached the ring: replan now, don't overshoot
 
     return [SearchPath(times=times, xy=xy[j]) for j in range(n_drones)]
+
+
+def ring_then_smart(cue_age_s, drone, prior, n_drones, dt=2.0, seed=0, **kw):
+    return greedy_shared(cue_age_s, drone, prior, n_drones, dt=dt, seed=seed,
+                         dash_to_ring=True, **kw)
+
+
+def guard_plus_smart(cue_age_s, drone, prior, n_drones, dt=2.0, seed=0, **kw):
+    if n_drones < 2:
+        raise ValueError("guard_plus_smart needs at least 2 drones (1 guard + 1 searcher)")
+    guard = expanding_square(cue_age_s, drone, dt=dt)
+    return [guard] + greedy_shared(cue_age_s, drone, prior, n_drones - 1, dt=dt, seed=seed,
+                                   fixed_paths=[guard], **kw)

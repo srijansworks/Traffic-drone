@@ -15,7 +15,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from cuesearch.evaluate import team_time_to_find, time_to_find, wilson  # noqa: E402
 from cuesearch.model import KNOT, BoatPrior, Boats, Drone  # noqa: E402
 from cuesearch.planners import expanding_square, probability_greedy, ring_search  # noqa: E402
-from cuesearch.team import greedy_shared, ring_team, rotate, square_team  # noqa: E402
+from cuesearch.team import (greedy_shared, guard_plus_smart, ring_team, ring_then_smart,  # noqa: E402
+                            rotate, square_team)
 
 FAILURES = []
 
@@ -168,6 +169,46 @@ def test_team():
           np.array_equal(team_time_to_find(rings, boats, 1000), np.min(each, axis=0)))
 
 
+def test_combos():
+    print("combo strategies")
+    drone = Drone(speed_ms=45, sweep_radius_m=1000, endurance_s=900)
+    prior = BoatPrior((10, 30))
+    v_ring = 20 * KNOT
+
+    team = ring_then_smart(600, drone, prior, 3, n_particles=400, seed=3)
+    check("ring-then-smart: one path per drone", len(team) == 3)
+    reach_s = 600 * v_ring / (45 - v_ring)          # same math as the ring test, ~178 s
+    early = int(reach_s / 2) - 2                     # a few steps before reaching the ring
+    for j, p in enumerate(team):
+        a = 2 * np.pi * j / 3
+        along = p.xy[early] @ np.array([np.cos(a), np.sin(a)])
+        off = np.linalg.norm(p.xy[early] - along * np.array([np.cos(a), np.sin(a)]))
+        check(f"ring-then-smart drone {j + 1}: dashes straight out on its own heading",
+              off < 1e-6 and along > 0, f"off-line {off:.1f} m")
+    r = np.linalg.norm(team[0].xy, axis=1)
+    reached = np.argmax(r >= v_ring * team[0].times)
+    check("ring-then-smart: stops dashing when it reaches the ring",
+          abs(team[0].times[reached] - 600 - reach_s) < 4, f"at {team[0].times[reached] - 600:.0f} s")
+    steps = np.concatenate([np.linalg.norm(np.diff(p.xy, axis=0), axis=1) for p in team])
+    check("ring-then-smart: never faster than the drone", steps.max() <= 90 + 1e-6)
+
+    g = guard_plus_smart(600, drone, prior, 3, n_particles=400, seed=3)
+    check("guard-plus-smart: one path per drone", len(g) == 3)
+    check("guard-plus-smart: drone 1 flies the standard square", np.allclose(g[0].xy, expanding_square(600, drone).xy))
+    # Needs boats that can still be near the tip (slow ones) for the guard to
+    # cross anything off; with 10-30 kn boats and a 10 min tip there are none.
+    slow = BoatPrior((0, 30))
+    g2 = guard_plus_smart(120, drone, slow, 3, n_particles=400, seed=3)
+    alone = greedy_shared(120, drone, slow, 2, n_particles=400, seed=3)
+    check("guard-plus-smart: the guard's sweeps change where the searchers go",
+          not np.allclose(g2[1].xy, alone[0].xy))
+    try:
+        guard_plus_smart(600, drone, prior, 1)
+        check("guard-plus-smart refuses a 1-drone team", False)
+    except ValueError:
+        check("guard-plus-smart refuses a 1-drone team", True)
+
+
 def test_wilson():
     print("confidence interval")
     lo, hi = wilson(0, 10)
@@ -186,6 +227,7 @@ if __name__ == "__main__":
     test_greedy_sweeps_guesses()
     test_time_to_find()
     test_team()
+    test_combos()
     test_wilson()
     print()
     if FAILURES:

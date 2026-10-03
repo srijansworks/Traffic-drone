@@ -17,6 +17,8 @@ random boats at those paths and count how many get found.
     python search_sim.py --drones 3
         # a team of 3 drones per strategy. Adds "smart, separate" vs
         # "smart, shared map" -- does sharing what you've searched matter?
+    python search_sim.py --drones 3 --strategies greedy_shared ring_then_smart guard_plus_smart
+        # pick exactly which strategies to run (see ALL_STRATEGIES below)
 
 Write your prediction in PREDICTIONS.md BEFORE you run anything.
 """
@@ -33,12 +35,15 @@ import numpy as np  # noqa: E402
 from cuesearch.evaluate import team_time_to_find, wilson  # noqa: E402
 from cuesearch.model import BoatPrior, Drone  # noqa: E402
 from cuesearch.planners import probability_greedy  # noqa: E402
-from cuesearch.team import greedy_independent, greedy_shared, ring_team, square_team  # noqa: E402
+from cuesearch.team import (greedy_independent, greedy_shared, guard_plus_smart,  # noqa: E402
+                            ring_team, ring_then_smart, square_team)
 
 STRATEGIES = ("expanding_square", "ring_search", "probability_greedy")
 TEAM_STRATEGIES = ("expanding_square", "ring_search", "greedy_independent", "greedy_shared")
+ALL_STRATEGIES = STRATEGIES + ("greedy_independent", "greedy_shared", "ring_then_smart", "guard_plus_smart")
 COLORS = {"expanding_square": "#888888", "ring_search": "#e67e22", "probability_greedy": "#1f6fd1",
-          "greedy_independent": "#8e7cc3", "greedy_shared": "#1f6fd1"}
+          "greedy_independent": "#8e7cc3", "greedy_shared": "#1f6fd1",
+          "ring_then_smart": "#16a085", "guard_plus_smart": "#c0392b"}
 
 
 def strategies(n_drones):
@@ -56,6 +61,10 @@ def plan(name, cue_age_s, drone, assumed, seed, n_drones=1):
         return greedy_independent(cue_age_s, drone, assumed, n_drones, seed=seed)
     if name == "greedy_shared":
         return greedy_shared(cue_age_s, drone, assumed, n_drones, seed=seed)
+    if name == "ring_then_smart":
+        return ring_then_smart(cue_age_s, drone, assumed, n_drones, seed=seed)
+    if name == "guard_plus_smart":
+        return guard_plus_smart(cue_age_s, drone, assumed, n_drones, seed=seed)
     return [probability_greedy(cue_age_s, drone, assumed, seed=seed)]
 
 
@@ -73,6 +82,8 @@ def main():
                          "set this to test what happens when the searcher is wrong)")
     ap.add_argument("--cue-error", type=float, default=100.0, help="m, satellite position error")
     ap.add_argument("--drones", type=int, default=1, help="drones per strategy (same for all)")
+    ap.add_argument("--strategies", nargs="+", choices=ALL_STRATEGIES, default=None,
+                    help="which strategies to run (default depends on --drones)")
     ap.add_argument("--seed", type=int, default=1)
     ap.add_argument("--out", default="results")
     args = ap.parse_args()
@@ -84,7 +95,9 @@ def main():
 
     # Boats come from a different random stream than the searcher's guesses.
     rng = np.random.default_rng(args.seed)
-    names = strategies(args.drones)
+    names = tuple(args.strategies) if args.strategies else strategies(args.drones)
+    if "guard_plus_smart" in names and args.drones < 2:
+        ap.error("guard_plus_smart needs --drones 2 or more")
     rows, curves, paths = [], {}, {}
     print(f"{'cue age':>8} {'strategy':>20} {'found':>7} {'95% CI':>15} {'median find':>12}")
     for age_min in args.cue_ages:
@@ -169,8 +182,9 @@ def plot_snapshot(paths, names, truth, args, out):
     age = ages[len(ages) // 2]
     rng = np.random.default_rng(args.seed + 7)
     boats = truth.sample(400, rng)
-    fig, axes = plt.subplots(1, len(names), figsize=(5.5 * len(names), 5.2),
+    fig, axes = plt.subplots(1, len(names), figsize=(5.5 * len(names), 5.2), squeeze=False,
                              sharex=True, sharey=True)
+    axes = axes[0]
     for ax, name in zip(axes, names):
         team = paths[(age, name)]
         path = team[0]
