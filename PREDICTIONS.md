@@ -138,3 +138,20 @@ search told the RIGHT speeds (`--boat-speed-kn 0 40`, results in results_right_g
   numbers jump around.
 
 ---
+
+## Drone teams: 3 drones, shared map vs separate
+
+**Date:** 2026-10-03
+**Command:** `python search_sim.py --drones 3 --cue-ages 2 5 10 20 30 --out results_team3`
+**I predict (my words):**
+1. "I think separate will find relatively the same # of boats, maybe around 30. However, I
+   predict that the shared map system will find a lot more, around 40-50."
+2. "I think the shared map beats separate by 10-15 pts."
+3. "I think situationally, 1 drone with a 2 minute tip performs better because it's a much
+   smaller area to cover."
+Meaning, at a 10 min old tip with 3 drones each: smart separate ~30%, smart shared map
+40–50%, shared beats separate by 10–15 points. And 1 drone with a 2 min tip (81.8%)
+beats 3 drones with a 10 min tip.
+**Because:** Separate drones waste time covering the same water. A 2 min tip leaves a much
+smaller area to search.
+
