@@ -155,3 +155,38 @@ beats 3 drones with a 10 min tip.
 **Because:** Separate drones waste time covering the same water. A 2 min tip leaves a much
 smaller area to search.
 
+**Actual:** (2,000 boats per test, results in results_team3/)
+
+| Tip age | Standard ×3 | Ring ×3 | Smart, separate ×3 | Smart, shared map ×3 |
+|---|---|---|---|---|
+| 2 min | 94.5% | 98.0% | 94.8% | 99.8% |
+| 5 min | 33.1% | 53.2% | 54.4% | 87.0% |
+| 10 min | 1.4% | 27.1% | 31.6% | 49.8% |
+| 20 min | 0.0% | 14.0% | 19.8% | 25.4% |
+| 30 min | 0.0% | 10.5% | 14.1% | 15.6% |
+
+1. Separate found 31.6% at 10 min (I guessed ~30). Right.
+   Shared map found 49.8% (I guessed 40–50). Right, at the top of my range.
+2. Shared map beat separate by about 18 points (I guessed 10–15). The gap was bigger
+   than I thought.
+3. 1 drone with a 2 min tip found 81.8%. 3 shared-map drones with a 10 min tip found
+   49.8%. The fresh tip wins, like I guessed.
+
+**What I learned:**
+- Sharing the map is a big deal. With one drone, smart search found 22 out of 100.
+  Three drones searching SEPARATELY only got to 32, so two of the three drones were
+  mostly wasted. Three drones with a SHARED map got to 50.
+- Why: the snapshot picture shows it. Separate drones all chase the same "best" spot,
+  so they bunch up on the same side. Shared-map drones split up and cover different parts.
+- A fresh tip still beats more drones. 1 drone with a 2 min tip (82) beats 3 drones with
+  a 10 min tip (50). Getting tips faster matters more than buying drones.
+- But more drones buy you time: 3 shared-map drones with a 5 min tip (87) did better than
+  1 drone with a 2 min tip (82). So 3 drones ≈ about 3 extra minutes of tip age.
+- When the tip is really old (30 min), sharing barely helps anymore (15.6 vs 14.1, and the
+  ranges overlap). The area is just too big for 3 drones no matter how they coordinate.
+- This is my director's "multiple drones" idea, but in a version that works: drones sent
+  to a tip, sharing one map, not patrolling the whole coast.
+- Still to check: rerun with a different `--seed`, and test the shared map with the
+  wrong speed guess (does a team fix the stopped-boat weak spot?).
+
+---
