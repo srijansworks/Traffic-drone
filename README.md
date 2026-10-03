@@ -21,7 +21,7 @@ First time on a new computer: `python3 -m venv venv && source venv/bin/activate 
 | File | What it does |
 |---|---|
 | `cuesearch/model.py` | The boat, the drone, and every assumption (with the reasoning) |
-| `cuesearch/planners.py` | The two search strategies: expanding square (baseline) and probability greedy |
+| `cuesearch/planners.py` | The three single-drone searches: expanding square, ring search, and smart search (v1) |
 | `cuesearch/evaluate.py` | Did the drone find the boat, how fast, and the confidence interval |
 | `cuesearch/team.py` | Drone teams: every strategy with N drones, plus smart search with and without a shared map |
 | `search_sim.py` | Runs the experiment and makes the graphs (`--drones 3` for teams) |
