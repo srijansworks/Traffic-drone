@@ -103,3 +103,38 @@ thinks boats go 10–30 knots but they really go 0–40 (it found ~22 when its g
 **Because:** Some boats will be slower or faster than it expects, so it searches in
 slightly the wrong places.
 
+**Actual:** At a 10 min old tip, smart search found 23.5% (95% CI 21.7–25.5%).
+That's MORE than my guess of 17–20, and even more than the 22% from before.
+
+But that's not a fair comparison, because the boats changed too. Now some boats are
+slow or stopped, and those are easier for everyone to find. (The standard search went
+from 0.4% to 20% just from that.) So I also ran the same 0–40 knot boats with smart
+search told the RIGHT speeds (`--boat-speed-kn 0 40`, results in results_right_guess_0_40/):
+
+| Tip age | Smart, right guess | Smart, wrong guess | Standard pattern |
+|---|---|---|---|
+| 10 min | 26.0% | 23.5% | 20.2% |
+| 20 min | 15.4% | 12.2% | 12.6% |
+| 30 min | 14.5% | 8.2% | 11.9% |
+
+(Ring search used the same average speed, 20 kn, in both runs, so it didn't change.)
+
+**What I learned:**
+- My guess was wrong in the right direction: the wrong speed guess hurt smart search,
+  but less than I thought at 10 min (it lost about 2–3 points, 26 down to 23.5, and
+  those ranges overlap, so that drop might partly be luck).
+- With older tips it hurts a lot. At 30 min the wrong guess cut smart search almost
+  in half (14.5 down to 8.2), and the plain standard search (11.9) beat it.
+- Why: smart search doesn't expect stopped or slow boats near the tip location, so it
+  leaves that area. The standard search stays near the middle and picks them up.
+- That matters for real life: a smuggler who stops and waits is exactly the boat the
+  smart search would miss if I tell it the wrong speeds.
+- So smart search is only as good as what I tell it about the boats. To trust it, I'd
+  need real data on how smuggling boats actually move, or I should give it a wider
+  guess (like 0–40 knots) on purpose.
+- One weird thing: at 5 min, the wrong guess did BETTER than the right guess (44.8%
+  vs 41.1%). Smart search is greedy (it only looks a couple of minutes ahead), so it
+  isn't perfect. I should rerun with a different `--seed` to see how much the
+  numbers jump around.
+
+---
