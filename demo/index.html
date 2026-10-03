@@ -1,0 +1,638 @@
+<title>Stale Tip Search</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&family=JetBrains+Mono:wght@400;500&family=Source+Sans+3:wght@400;600&display=swap">
+<style>
+:root {
+  --bg: #f3f6f6;
+  --panel: #ffffff;
+  --sea: #e4edef;
+  --ink: #13232b;
+  --ink-2: #4b5b63;
+  --muted: #6f7f86;
+  --rule: #d3dddf;
+  --grid: #c3d2d5;
+  --boat: #8a979c;
+  --s1: #2a78d6;
+  --s2: #eb6834;
+  --s3: #1baf7a;
+  --focus: #2a78d6;
+  --display: "Barlow Condensed", "Arial Narrow", "Helvetica Neue", sans-serif;
+  --body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0f1b22;
+    --panel: #14232c;
+    --sea: #0b1820;
+    --ink: #e3ecee;
+    --ink-2: #a8b8be;
+    --muted: #84969d;
+    --rule: #24363f;
+    --grid: #213744;
+    --boat: #5f737c;
+    --s1: #3987e5;
+    --s2: #d95926;
+    --s3: #199e70;
+    --focus: #6aa8ef;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0f1b22;
+  --panel: #14232c;
+  --sea: #0b1820;
+  --ink: #e3ecee;
+  --ink-2: #a8b8be;
+  --muted: #84969d;
+  --rule: #24363f;
+  --grid: #213744;
+  --boat: #5f737c;
+  --s1: #3987e5;
+  --s2: #d95926;
+  --s3: #199e70;
+  --focus: #6aa8ef;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 16px/1.5 var(--body);
+}
+.wrap {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding-inline: 20px;
+  padding-block: 28px 56px;
+  display: grid;
+  gap: 28px;
+}
+
+header { display: grid; gap: 8px; max-width: 760px; }
+.eyebrow {
+  font: 500 12px/1 var(--mono);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+h1 {
+  font: 600 clamp(28px, 4.2vw, 42px)/1.08 var(--display);
+  letter-spacing: .005em;
+  margin: 0;
+  text-wrap: balance;
+}
+.lede { margin: 0; color: var(--ink-2); max-width: 64ch; }
+
+/* Controls */
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+  padding-block: 14px;
+  border-block: 1px solid var(--rule);
+}
+.group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.label {
+  font: 500 11px/1 var(--mono);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; }
+.seg button {
+  font: 500 14px/1 var(--mono);
+  padding: 9px 12px;
+  border: 0;
+  background: var(--panel);
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.seg button + button { border-left: 1px solid var(--rule); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.btn {
+  font: 600 15px/1 var(--body);
+  padding: 10px 16px;
+  border-radius: 6px;
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--bg);
+  cursor: pointer;
+}
+.btn.ghost { background: transparent; color: var(--ink); border-color: var(--rule); }
+select {
+  font: 500 14px/1 var(--mono);
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--rule);
+  background: var(--panel);
+  color: var(--ink);
+}
+button:focus-visible, select:focus-visible, input:focus-visible, summary:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.clockrow {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  align-items: center;
+  gap: 12px 18px;
+}
+.clock { font: 500 22px/1 var(--mono); font-variant-numeric: tabular-nums; }
+.clock small { font-size: 12px; color: var(--muted); margin-left: 6px; letter-spacing: .04em; }
+.phase {
+  display: inline-flex; align-items: center; gap: 8px;
+  font: 600 13px/1 var(--body);
+  padding: 7px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--rule);
+  background: var(--panel);
+  white-space: nowrap;
+}
+.phase i { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.phase[data-phase="search"] i { background: var(--s3); }
+.phase[data-phase="transit"] i { background: var(--s2); }
+input[type="range"] { width: 100%; accent-color: var(--ink); }
+@media (max-width: 620px) {
+  .clockrow { grid-template-columns: auto 1fr; }
+  .clockrow input { grid-column: 1 / -1; }
+}
+
+/* Panels */
+.panels {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+@media (max-width: 900px) { .panels { grid-template-columns: minmax(0, 1fr); } }
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  overflow: hidden;
+  display: grid;
+}
+.panel-head { padding: 14px 16px 10px; display: grid; gap: 2px; }
+.panel-head h2 {
+  margin: 0;
+  font: 600 22px/1.1 var(--display);
+  display: flex; align-items: center; gap: 8px;
+}
+.swatch { width: 12px; height: 12px; border-radius: 3px; flex: none; }
+.panel-head p { margin: 0; font-size: 14px; color: var(--ink-2); }
+canvas { display: block; width: 100%; aspect-ratio: 1 / 1; max-width: 100%; background: var(--sea); }
+.panel-foot {
+  padding: 12px 16px 14px;
+  display: grid;
+  gap: 8px;
+  border-top: 1px solid var(--rule);
+}
+.count { display: flex; align-items: baseline; gap: 8px; font-variant-numeric: tabular-nums; }
+.count b { font: 600 34px/1 var(--display); }
+.count span { font-size: 14px; color: var(--ink-2); }
+.bar { height: 6px; border-radius: 3px; background: var(--sea); overflow: hidden; }
+.bar > div { height: 100%; width: 0; border-radius: 3px; }
+
+.key {
+  display: flex; flex-wrap: wrap; gap: 8px 22px;
+  font-size: 14px; color: var(--ink-2);
+}
+.key span { display: inline-flex; align-items: center; gap: 8px; }
+.key svg { flex: none; }
+
+/* Results */
+section.results { display: grid; gap: 14px; }
+h3 { margin: 0; font: 600 26px/1.1 var(--display); text-wrap: balance; }
+.sub { margin: 0; color: var(--ink-2); font-size: 15px; max-width: 70ch; }
+.chartbox {
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  padding: 16px 16px 8px;
+  position: relative;
+}
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 14px; color: var(--ink-2); margin-bottom: 6px; }
+.legend span { display: inline-flex; align-items: center; gap: 7px; }
+.legend i { width: 16px; height: 3px; border-radius: 2px; }
+svg.chart { width: 100%; height: auto; display: block; overflow: visible; }
+svg.chart text { font-family: var(--mono); font-size: 11px; fill: var(--muted); }
+svg.chart text.dl { font-family: var(--body); font-size: 13px; font-weight: 600; fill: var(--ink-2); }
+.tip {
+  position: absolute;
+  pointer-events: none;
+  background: var(--ink);
+  color: var(--bg);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font: 13px/1.45 var(--body);
+  font-variant-numeric: tabular-nums;
+  min-width: 180px;
+  box-shadow: 0 4px 14px rgba(0,0,0,.18);
+}
+.tip b { font-family: var(--mono); font-weight: 500; }
+.tip .row { display: flex; align-items: center; gap: 7px; justify-content: space-between; }
+.tip .row i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+
+details { font-size: 14px; }
+summary { cursor: pointer; color: var(--ink-2); font-weight: 600; }
+.tablewrap { overflow-x: auto; margin-top: 10px; }
+table { border-collapse: collapse; font-variant-numeric: tabular-nums; min-width: 520px; width: 100%; }
+th, td { text-align: right; padding: 6px 10px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; }
+th { font: 500 11px/1.2 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+td small { color: var(--muted); }
+
+/* Assumptions */
+.assume {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 1px;
+  background: var(--rule);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.assume div { background: var(--panel); padding: 12px 14px; display: grid; gap: 4px; }
+.assume dt { font: 500 11px/1.2 var(--mono); letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+.assume dd { margin: 0; font: 600 20px/1.15 var(--display); }
+.assume dd small { font: 400 13px/1.3 var(--body); color: var(--ink-2); display: block; margin-top: 2px; }
+.caveat { margin: 0; font-size: 15px; color: var(--ink-2); max-width: 75ch; }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Drone search simulation · satellite tip to boat found</div>
+    <h1>A satellite spots a boat. By the time the drone gets there, the boat has moved.</h1>
+    <p class="lede">Pick how old the tip is when the drone arrives, then press play. Every dot is a place the boat could really be. A dot lights up when that drone spots it. Same 300 boats in all three panels.</p>
+  </header>
+
+  <div class="controls" aria-label="Playback controls">
+    <div class="group">
+      <span class="label" id="agelbl">Tip age on arrival</span>
+      <div class="seg" role="group" aria-labelledby="agelbl" id="ages"></div>
+    </div>
+    <div class="group">
+      <button class="btn" id="play" type="button">Play from satellite pass</button>
+      <button class="btn ghost" id="pause" type="button">Pause</button>
+    </div>
+    <div class="group">
+      <label class="label" for="speed">Speed</label>
+      <select id="speed">
+        <option value="60">60×</option>
+        <option value="120" selected>120×</option>
+        <option value="240">240×</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="clockrow">
+    <div class="clock" id="clock" aria-live="off">T+00:00<small>since satellite pass</small></div>
+    <div class="phase" id="phase" data-phase="transit"><i></i><span id="phasetxt">Drone en route</span></div>
+    <input type="range" id="scrub" min="0" max="1000" value="0" step="1" aria-label="Time since satellite pass">
+  </div>
+
+  <div class="panels" id="panels"></div>
+
+  <div class="key" aria-hidden="false">
+    <span><svg width="14" height="14"><circle cx="7" cy="7" r="2.2" fill="var(--boat)"/></svg>Possible boat, not seen yet</span>
+    <span><svg width="14" height="14"><circle cx="7" cy="7" r="3.6" fill="var(--ink-2)"/></svg>Spotted (in that drone's colour)</span>
+    <span><svg width="22" height="14"><line x1="1" y1="7" x2="21" y2="7" stroke="var(--ink-2)" stroke-width="1.4" stroke-dasharray="3 3"/></svg>How far the boat could have gone (10–30 knots)</span>
+    <span><svg width="14" height="14"><path d="M7 2v10M2 7h10" stroke="var(--ink)" stroke-width="1.6"/></svg>Where the satellite saw it</span>
+  </div>
+
+  <section class="results" aria-labelledby="res-h">
+    <h3 id="res-h">How often each search finds the boat, by how old the tip is</h3>
+    <p class="sub">Each point is 1,000 simulated boats; the shaded band is the 95% confidence interval. The dashed line marks the tip age playing above.</p>
+    <div class="chartbox" id="chartbox">
+      <div class="legend" id="legend"></div>
+      <svg class="chart" id="chart" viewBox="0 0 680 300" role="img" aria-label="Percent of boats found versus tip age for three search strategies"></svg>
+      <div class="tip" id="tip" hidden></div>
+    </div>
+    <details>
+      <summary>Show the numbers as a table</summary>
+      <div class="tablewrap"><table id="table"></table></div>
+    </details>
+  </section>
+
+  <section class="results" aria-labelledby="as-h">
+    <h3 id="as-h">What the simulation assumes</h3>
+    <dl class="assume" id="assume"></dl>
+    <p class="caveat">These are assumptions, not field data. The two that matter most: how far a drone's camera can really spot a small boat at sea, and whether boats hold a straight course. Real boats turn, stop, and hide near the coast; this version doesn't model that yet.</p>
+  </section>
+</div>
+
+<script src="demo_data.js"></script>
+<script>
+(() => {
+  const D = window.DEMO;
+  const KNOT_KMS = 0.514444 / 1000;
+  const META = {
+    expanding_square: { name: "Standard pattern", note: "Square spiral outward from where the satellite saw the boat.", c: "--s1" },
+    ring_search:      { name: "Ring search", note: "Flies out to where the boat probably is now, circles as that ring grows.", c: "--s2" },
+    probability_greedy: { name: "Smart search", note: "Heads for the most likely spots and crosses off empty water.", c: "--s3" },
+  };
+  const S = D.strategies;
+  const A = D.assumptions;
+  const END_S = A.endurance_min * 60;
+  const VMIN = A.boat_speed_kn[0] * KNOT_KMS, VMAX = A.boat_speed_kn[1] * KNOT_KMS;
+
+  let ageIdx = Math.max(0, D.playback.findIndex(p => p.age_min === 10));
+  let t = 0, playing = false, last = null;
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const $ = id => document.getElementById(id);
+  const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  const pb = () => D.playback[ageIdx];
+  const arrival = () => pb().age_min * 60;
+  const total = () => arrival() + END_S;
+
+  // ---- build panels
+  const panels = S.map(key => {
+    const el = document.createElement("article");
+    el.className = "panel";
+    el.innerHTML = `
+      <div class="panel-head">
+        <h2><span class="swatch" style="background:var(${META[key].c})"></span>${META[key].name}</h2>
+        <p>${META[key].note}</p>
+      </div>
+      <canvas aria-label="${META[key].name} search map"></canvas>
+      <div class="panel-foot">
+        <div class="count"><b>0</b><span>of ${pb().boats.offset_km.length} boats found</span></div>
+        <div class="bar"><div style="background:var(${META[key].c})"></div></div>
+      </div>`;
+    $("panels").appendChild(el);
+    return { key, el, canvas: el.querySelector("canvas"), num: el.querySelector(".count b"),
+             of: el.querySelector(".count span"), bar: el.querySelector(".bar > div") };
+  });
+
+  // ---- tip age buttons
+  D.playback.forEach((p, i) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.id = `age-${p.age_min}`;
+    b.textContent = `${p.age_min} min`;
+    b.setAttribute("aria-pressed", i === ageIdx);
+    b.addEventListener("click", () => {
+      ageIdx = i;
+      [...$("ages").children].forEach((c, j) => c.setAttribute("aria-pressed", j === i));
+      setTime(Math.min(arrival() + 20 * 60, total()));
+      playing = false;
+      markAge();
+    });
+    $("ages").appendChild(b);
+  });
+
+  // ---- geometry helpers
+  function boatAt(i, tt) {
+    const o = pb().boats.offset_km[i], v = pb().boats.velocity_kms[i];
+    return [o[0] + v[0] * tt, o[1] + v[1] * tt];
+  }
+  function droneAt(run, s) {
+    const path = run.path, step = D.path_every_s;
+    const f = Math.max(0, Math.min(s / step, path.length - 1));
+    const i = Math.floor(f), k = f - i, a = path[i], b = path[Math.min(i + 1, path.length - 1)];
+    return [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k];
+  }
+  function viewRadius(tt) {
+    let r = VMAX * tt + 0.4;
+    const s = tt - arrival();
+    if (s > 0) for (const key of S) {
+      const run = pb().runs[key], n = Math.min(Math.floor(s / D.path_every_s), run.path.length - 1);
+      for (let i = 0; i <= n; i++) r = Math.max(r, Math.hypot(run.path[i][0], run.path[i][1]));
+    }
+    return Math.max(4, r * 1.12);
+  }
+  function ringStep(R) {
+    for (const s of [1, 2, 5, 10, 20, 50]) if (R / s <= 4.5) return s;
+    return 100;
+  }
+
+  // ---- draw
+  function draw() {
+    const tt = t, s = tt - arrival(), R = viewRadius(tt);
+    const col = { sea: css("--sea"), grid: css("--grid"), boat: css("--boat"), ink: css("--ink"),
+                  muted: css("--muted"), panel: css("--panel") };
+    const nBoats = pb().boats.offset_km.length;
+    const pos = Array.from({ length: nBoats }, (_, i) => boatAt(i, tt));
+
+    for (const p of panels) {
+      const run = pb().runs[p.key], c = css(META[p.key].c);
+      const cv = p.canvas, dpr = window.devicePixelRatio || 1;
+      const w = cv.clientWidth, h = cv.clientHeight;
+      if (!w) continue;
+      if (cv.width !== Math.round(w * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+      const ctx = cv.getContext("2d");
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const cx = w / 2, cy = h / 2, k = (Math.min(w, h) / 2 - 6) / R;
+      const X = x => cx + x * k, Y = y => cy - y * k;
+
+      ctx.fillStyle = col.sea; ctx.fillRect(0, 0, w, h);
+
+      // range rings
+      const step = ringStep(R);
+      ctx.strokeStyle = col.grid; ctx.lineWidth = 1;
+      ctx.font = `11px ${css("--mono")}`; ctx.fillStyle = col.muted;
+      ctx.textAlign = "left"; ctx.textBaseline = "bottom";
+      for (let r = step; r <= R * 1.45; r += step) {
+        ctx.beginPath(); ctx.arc(cx, cy, r * k, 0, Math.PI * 2); ctx.stroke();
+        const a = -Math.PI / 4;
+        const lx = cx + Math.cos(a) * r * k + 3, ly = cy + Math.sin(a) * r * k - 2;
+        if (lx < w - 34 && ly > 14) ctx.fillText(`${r} km`, lx, ly);
+      }
+
+      // where the boat could be: between slowest and fastest boat
+      ctx.setLineDash([4, 4]); ctx.strokeStyle = col.muted; ctx.lineWidth = 1.2;
+      for (const r of [VMIN * tt, VMAX * tt]) if (r * k > 2) {
+        ctx.beginPath(); ctx.arc(cx, cy, r * k, 0, Math.PI * 2); ctx.stroke();
+      }
+      ctx.setLineDash([]);
+
+      // boats: unseen first, then spotted on top
+      let found = 0;
+      ctx.fillStyle = col.boat;
+      for (let i = 0; i < nBoats; i++) {
+        const f = run.found_s[i];
+        if (s >= 0 && f !== null && f <= s) { found++; continue; }
+        ctx.beginPath(); ctx.arc(X(pos[i][0]), Y(pos[i][1]), 1.9, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.fillStyle = c; ctx.strokeStyle = col.sea; ctx.lineWidth = 1.5;
+      for (let i = 0; i < nBoats; i++) {
+        const f = run.found_s[i];
+        if (!(s >= 0 && f !== null && f <= s)) continue;
+        ctx.beginPath(); ctx.arc(X(pos[i][0]), Y(pos[i][1]), 3.6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      }
+
+      // satellite fix
+      ctx.strokeStyle = col.ink; ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.moveTo(cx - 6, cy); ctx.lineTo(cx + 6, cy); ctx.moveTo(cx, cy - 6); ctx.lineTo(cx, cy + 6); ctx.stroke();
+
+      // drone: trail, sensor footprint, aircraft
+      if (s >= 0) {
+        const n = Math.min(Math.floor(s / D.path_every_s), run.path.length - 1);
+        const here = droneAt(run, s);
+        ctx.strokeStyle = c; ctx.lineWidth = 1.8; ctx.lineJoin = "round";
+        ctx.beginPath(); ctx.moveTo(X(0), Y(0));
+        for (let i = 0; i <= n; i++) ctx.lineTo(X(run.path[i][0]), Y(run.path[i][1]));
+        ctx.lineTo(X(here[0]), Y(here[1])); ctx.stroke();
+
+        ctx.globalAlpha = 0.18; ctx.fillStyle = c;
+        ctx.beginPath(); ctx.arc(X(here[0]), Y(here[1]), Math.max(4, A.sweep_radius_km * k), 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = c; ctx.strokeStyle = col.panel; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(X(here[0]), Y(here[1]), 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      }
+
+      // scale note
+      ctx.fillStyle = col.muted; ctx.textAlign = "right"; ctx.textBaseline = "bottom";
+      ctx.fillText(`rings every ${step} km`, w - 8, h - 6);
+
+      p.num.textContent = found;
+      p.of.textContent = `of ${nBoats} boats found (${Math.round(100 * found / nBoats)}%)`;
+      p.bar.style.width = `${100 * found / nBoats}%`;
+    }
+
+    // clock + phase
+    const mm = String(Math.floor(tt / 60)).padStart(2, "0"), ss = String(Math.floor(tt % 60)).padStart(2, "0");
+    $("clock").innerHTML = `T+${mm}:${ss}<small>since satellite pass</small>`;
+    const ph = $("phase");
+    if (s < 0) {
+      ph.dataset.phase = "transit";
+      const left = -s;
+      $("phasetxt").textContent = `Drone en route · arrives in ${Math.floor(left / 60)}:${String(Math.floor(left % 60)).padStart(2, "0")}`;
+    } else if (s < END_S) {
+      ph.dataset.phase = "search";
+      $("phasetxt").textContent = `Searching · ${Math.floor(s / 60)} of ${A.endurance_min} min used`;
+    } else {
+      ph.dataset.phase = "done";
+      $("phasetxt").textContent = "Battery out · search over";
+    }
+    $("scrub").value = Math.round(1000 * tt / total());
+  }
+
+  function setTime(v) { t = Math.max(0, Math.min(v, total())); draw(); }
+
+  function frame(ts) {
+    if (!playing) { last = null; return; }
+    if (last !== null) {
+      const sp = Number($("speed").value);
+      t = Math.min(total(), t + (ts - last) / 1000 * sp);
+      if (t >= total()) playing = false;
+    }
+    last = ts;
+    draw();
+    requestAnimationFrame(frame);
+  }
+  function play(fromStart) {
+    if (fromStart || t >= total()) t = 0;
+    if (reduced) { setTime(total()); return; }
+    if (!playing) { playing = true; requestAnimationFrame(frame); }
+  }
+
+  $("play").addEventListener("click", () => play(true));
+  $("pause").addEventListener("click", () => {
+    if (playing) { playing = false; $("pause").textContent = "Resume"; }
+    else { $("pause").textContent = "Pause"; play(false); }
+  });
+  $("scrub").addEventListener("input", e => { playing = false; setTime(total() * e.target.value / 1000); });
+  new ResizeObserver(() => draw()).observe($("panels"));
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { draw(); buildChart(); });
+  new MutationObserver(() => { draw(); buildChart(); }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+  // ---- results chart
+  const W = 680, H = 300, M = { l: 44, r: 112, t: 10, b: 36 };
+  const xs = a => M.l + (a / 60) * (W - M.l - M.r);
+  const ys = p => M.t + (1 - p) * (H - M.t - M.b);
+  const ages = D.curve[S[0]].map(d => d.age_min);
+  const NS = "http://www.w3.org/2000/svg";
+  const mk = (tag, attrs, parent) => {
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    parent.appendChild(e); return e;
+  };
+
+  function buildChart() {
+    const svg = $("chart"); svg.innerHTML = "";
+    for (const p of [0, .25, .5, .75, 1]) {
+      mk("line", { x1: M.l, x2: W - M.r, y1: ys(p), y2: ys(p), stroke: css("--rule"), "stroke-width": 1 }, svg);
+      mk("text", { x: M.l - 8, y: ys(p) + 4, "text-anchor": "end" }, svg).textContent = `${p * 100}%`;
+    }
+    for (const a of [0, 10, 20, 30, 40, 50, 60]) {
+      mk("text", { x: xs(a), y: H - M.b + 18, "text-anchor": "middle" }, svg).textContent = a;
+    }
+    mk("text", { x: (M.l + W - M.r) / 2, y: H - 2, "text-anchor": "middle" }, svg).textContent = "tip age when drone arrives (minutes)";
+
+    const marker = mk("line", { id: "agemark", y1: M.t, y2: H - M.b, stroke: css("--ink-2"), "stroke-width": 1.2, "stroke-dasharray": "4 4" }, svg);
+
+    for (const key of S) {
+      const c = css(META[key].c), d = D.curve[key];
+      const band = d.map(v => `${xs(v.age_min)},${ys(v.hi)}`).concat(d.slice().reverse().map(v => `${xs(v.age_min)},${ys(v.lo)}`));
+      mk("polygon", { points: band.join(" "), fill: c, "fill-opacity": .14 }, svg);
+      mk("polyline", { points: d.map(v => `${xs(v.age_min)},${ys(v.p)}`).join(" "), fill: "none", stroke: c, "stroke-width": 2, "stroke-linejoin": "round" }, svg);
+      for (const v of d) mk("circle", { cx: xs(v.age_min), cy: ys(v.p), r: 4, fill: c, stroke: css("--panel"), "stroke-width": 2 }, svg);
+    }
+
+    // direct labels at the right edge, nudged apart so they never overlap
+    const at = 10;
+    const labs = S.map(key => ({ key, y: ys(D.curve[key].find(v => v.age_min === at).p) }))
+      .sort((a, b) => a.y - b.y);
+    for (let i = 1; i < labs.length; i++) labs[i].y = Math.max(labs[i].y, labs[i - 1].y + 16);
+    for (const l of labs) {
+      const v = D.curve[l.key].find(v => v.age_min === at);
+      mk("line", { x1: xs(at) + 6, y1: ys(v.p), x2: W - M.r + 4, y2: l.y, stroke: css(META[l.key].c), "stroke-width": 1, "stroke-opacity": .6 }, svg);
+      mk("text", { x: W - M.r + 8, y: l.y + 4, class: "dl" }, svg).textContent = `${META[l.key].name} ${Math.round(v.p * 100)}%`;
+    }
+
+    const cross = mk("line", { y1: M.t, y2: H - M.b, stroke: css("--muted"), "stroke-width": 1, visibility: "hidden" }, svg);
+    const hit = mk("rect", { x: M.l, y: M.t, width: W - M.l - M.r, height: H - M.t - M.b, fill: "transparent" }, svg);
+    const tip = $("tip");
+    hit.addEventListener("pointermove", e => {
+      const box = svg.getBoundingClientRect(), sx = W / box.width;
+      const x = (e.clientX - box.left) * sx;
+      let best = ages[0];
+      for (const a of ages) if (Math.abs(xs(a) - x) < Math.abs(xs(best) - x)) best = a;
+      cross.setAttribute("x1", xs(best)); cross.setAttribute("x2", xs(best)); cross.setAttribute("visibility", "visible");
+      tip.innerHTML = `<div style="margin-bottom:4px">Tip <b>${best} min</b> old</div>` + S.map(key => {
+        const v = D.curve[key].find(v => v.age_min === best);
+        return `<div class="row"><span><i style="background:var(${META[key].c})"></i>${META[key].name}</span><b>${(v.p * 100).toFixed(1)}%</b></div>`;
+      }).join("");
+      tip.hidden = false;
+      const cb = $("chartbox").getBoundingClientRect();
+      const px = box.left - cb.left + xs(best) / sx;
+      const left = px + 14 + tip.offsetWidth > cb.width ? px - 14 - tip.offsetWidth : px + 14;
+      tip.style.left = `${Math.max(4, left)}px`;
+      tip.style.top = `${box.top - cb.top + 16}px`;
+    });
+    hit.addEventListener("pointerleave", () => { tip.hidden = true; cross.setAttribute("visibility", "hidden"); });
+    markAge();
+  }
+  function markAge() {
+    const m = document.getElementById("agemark");
+    if (m) { m.setAttribute("x1", xs(pb().age_min)); m.setAttribute("x2", xs(pb().age_min)); }
+  }
+
+  // legend, table, assumptions
+  $("legend").innerHTML = S.map(key => `<span><i style="background:var(${META[key].c})"></i>${META[key].name}</span>`).join("");
+  $("table").innerHTML =
+    `<thead><tr><th>Tip age</th>${S.map(k => `<th>${META[k].name}</th>`).join("")}</tr></thead><tbody>` +
+    ages.map((a, i) => `<tr><td>${a} min</td>${S.map(k => {
+      const v = D.curve[k][i];
+      return `<td>${(v.p * 100).toFixed(1)}% <small>[${(v.lo * 100).toFixed(1)}–${(v.hi * 100).toFixed(1)}]</small></td>`;
+    }).join("")}</tr>`).join("") + "</tbody>";
+  const mph = Math.round(A.drone_speed_ms * 2.23694);
+  $("assume").innerHTML = [
+    ["Drone speed", `${A.drone_speed_ms} m/s`, `about ${mph} mph, like a fixed-wing`],
+    ["Drone can spot a boat within", `${A.sweep_radius_km} km`, "a guess; the biggest unknown"],
+    ["Search time on station", `${A.endurance_min} min`, "after reaching the tip location"],
+    ["Boat speed", `${A.boat_speed_kn[0]}–${A.boat_speed_kn[1]} knots`, "random, straight course"],
+    ["Satellite position error", `±${A.cue_error_m} m`, "one standard deviation"],
+  ].map(([k, v, n]) => `<div><dt>${k}</dt><dd>${v}<small>${n}</small></dd></div>`).join("");
+
+  buildChart();
+  // Open at rest mid-search so the first look shows what the demo does.
+  setTime(arrival() + 20 * 60);
+})();
+</script>
