@@ -190,3 +190,18 @@ smaller area to search.
   wrong speed guess (does a team fix the stopped-boat weak spot?).
 
 ---
+
+## Combo strategies: ring-then-smart and guard-plus-smart (3 drones)
+
+**Date:** 2026-10-03
+**Commands:**
+- `python search_sim.py --drones 3 --cue-ages 2 5 10 20 30 --strategies greedy_shared ring_then_smart guard_plus_smart --out results_combos`
+- `python search_sim.py --drones 3 --assumed-speed-kn 10 30 --boat-speed-kn 0 40 --cue-ages 2 5 10 20 30 --strategies expanding_square greedy_shared guard_plus_smart --out results_combos_wrong_guess`
+
+**I predict (my words):** "1, better, 57. 2. 55, 3. 45"
+Meaning, at a 10 min old tip with 3 drones (plain shared map got 49.8%):
+1. Ring-then-smart does better than the plain shared map: 57%.
+2. Guard-plus-smart with the right speed guess: 55%.
+3. With the wrong speed guess (thinks 10–30 kn, really 0–40): 45%. (I gave one number;
+   recording it for both the plain shared map and guard-plus-smart.)
+
