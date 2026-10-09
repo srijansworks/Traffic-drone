@@ -427,3 +427,21 @@ I guessed both would drop a lot (smart 50–60, spiral 30–40). Both went UP. W
   knows it was spotted. These AIS boats weren't hiding from anyone.
 - Next: test older tips (30–60 min) on real paths, and other days of data, and look at
   real fast boats (not just fishing).
+
+---
+
+## Experiments 15–16: older tips on real fishing paths, real fast boats (2026-10-09)
+
+**Experiment 15.** Same as 14 (three X10-like drones, real fishing paths, search assumes
+0–12 kn) with 30 and 60 min tips. Straight-line slow boats at 30 min: smart 40.1%,
+spiral 27.9%.
+
+**Experiment 16.** Real fast boats: AIS pleasure craft (type 37) doing 15+ kn at the
+tip, as a stand-in for go-fast boats. Three F10-like drones (45 m/s, 60 min), 10 min
+tip, search assumes 10–40 kn. Straight-line 10–30 kn boats: smart 51.8%, spiral 1.7%.
+
+### My predictions (my words)
+
+15. "smart gets 64% spiral gets 50%, for 60 minutes, smart gets 40% and spiral gets 15%"
+    (30 min tip: smart 64, spiral 50. 60 min tip: smart 40, spiral 15.)
+16. "smart will get 40% and spiral gets 0%"
