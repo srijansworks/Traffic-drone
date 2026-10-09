@@ -250,3 +250,14 @@ same boats and the RIGHT guess for comparison (results_combos_right_guess_0_40/)
   the search a wider speed guess on purpose is probably better than adding a guard.
 
 ---
+
+---
+
+### Note (2026-10-09): random-number fix
+
+Not an experiment, just a fix. Each tip age now gets its own random boats, so running
+one age alone gives the same boats as running many ages. (An uncommitted edit tried
+this but at a 1-minute tip it gave the searcher the exact same boats it was guessing,
+which would be cheating. Caught and fixed, with a test.) Results logged ABOVE this note
+used the old random numbers, so reruns of the same commands will come out slightly
+different. Compare new results only to runs made after this fix.

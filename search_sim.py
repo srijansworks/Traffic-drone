@@ -68,6 +68,21 @@ def plan(name, cue_age_s, drone, assumed, seed, n_drones=1):
     return [probability_greedy(cue_age_s, drone, assumed, seed=seed)]
 
 
+def boat_rng(seed, age_min):
+    """Random numbers for the TRUE boats at one tip age.
+
+    Each age gets its own stream, so `--cue-ages 10` gives the same boats as a
+    multi-age run. The seed is a list tagged with BOAT_TAG, never a plain int,
+    so it can't collide with a planner's seed (planners get seed + 1000). An
+    earlier version used seed + age*1000, which at a 1-minute tip handed the
+    searcher the exact boats it was looking for.
+    """
+    return np.random.default_rng([BOAT_TAG, seed, int(round(age_min * 1000))])
+
+
+BOAT_TAG = 0xB0A7
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--cue-ages", type=float, nargs="+", default=[0, 2, 4, 6, 8, 10, 15, 20, 30, 45, 60],
@@ -93,15 +108,14 @@ def main():
     assumed = BoatPrior(tuple(args.assumed_speed_kn or args.boat_speed_kn), args.cue_error)
     os.makedirs(args.out, exist_ok=True)
 
-    # Boats come from a different random stream than the searcher's guesses.
-    rng = np.random.default_rng(args.seed)
+    # Boats come from a different random stream than the searcher's guesses (see boat_rng).
     names = tuple(args.strategies) if args.strategies else strategies(args.drones)
     if "guard_plus_smart" in names and args.drones < 2:
         ap.error("guard_plus_smart needs --drones 2 or more")
     rows, curves, paths = [], {}, {}
     print(f"{'cue age':>8} {'strategy':>20} {'found':>7} {'95% CI':>15} {'median find':>12}")
     for age_min in args.cue_ages:
-        boats = truth.sample(args.trials, rng)
+        boats = truth.sample(args.trials, boat_rng(args.seed, age_min))
         for name in names:
             team = plan(name, age_min * 60, drone, assumed, seed=args.seed + 1000, n_drones=args.drones)
             t = team_time_to_find(team, boats, drone.sweep_radius_m)

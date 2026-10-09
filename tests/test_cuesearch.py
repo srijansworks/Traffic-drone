@@ -209,6 +209,25 @@ def test_combos():
         check("guard-plus-smart refuses a 1-drone team", True)
 
 
+def test_boats_never_share_the_searchers_random_stream():
+    print("boat randomness is separate from the searcher's")
+    from search_sim import boat_rng
+    prior = BoatPrior()
+    clashes = []
+    for seed in range(1, 6):
+        guesses = prior.sample(50, np.random.default_rng(seed + 1000)).offset
+        for age in [0, 0.5, 1, 2, 4, 6, 8, 10, 15, 20, 30, 45, 60]:
+            boats = prior.sample(50, boat_rng(seed, age)).offset
+            if np.allclose(boats, guesses):
+                clashes.append((seed, age))
+    check("no seed/age gives boats identical to the planner's guesses", not clashes, str(clashes))
+    a = prior.sample(5, boat_rng(1, 10)).offset
+    b = prior.sample(5, boat_rng(1, 10)).offset
+    check("same seed and age -> same boats", np.allclose(a, b))
+    c = prior.sample(5, boat_rng(1, 20)).offset
+    check("different ages -> different boats", not np.allclose(a, c))
+
+
 def test_wilson():
     print("confidence interval")
     lo, hi = wilson(0, 10)
@@ -228,6 +247,7 @@ if __name__ == "__main__":
     test_time_to_find()
     test_team()
     test_combos()
+    test_boats_never_share_the_searchers_random_stream()
     test_wilson()
     print()
     if FAILURES:
