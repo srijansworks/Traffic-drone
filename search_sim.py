@@ -11,6 +11,7 @@ random boats at those paths and count how many get found.
     python search_sim.py                              # the main experiment
     python search_sim.py --trials 300 --cue-ages 0 20 # quick look
     python search_sim.py --drone-speed 15             # a quadcopter instead
+    python search_sim.py --drone x10                  # Skydio X10-like quadcopter (see DRONES)
     python search_sim.py --assumed-speed-kn 10 30 --boat-speed-kn 0 40
         # the searcher THINKS boats do 10-30 kn, but real ones do 0-40.
         # This is the honesty test: the smart search only knows what you told it.
@@ -44,6 +45,16 @@ ALL_STRATEGIES = STRATEGIES + ("greedy_independent", "greedy_shared", "ring_then
 COLORS = {"expanding_square": "#888888", "ring_search": "#e67e22", "probability_greedy": "#1f6fd1",
           "greedy_independent": "#8e7cc3", "greedy_shared": "#1f6fd1",
           "ring_then_smart": "#16a085", "guard_plus_smart": "#c0392b"}
+
+
+# Rough stand-ins for real drones. Speeds and search times are guesses from public
+# specs and a Skydio engineer's comments (2026-10-09), not measured.
+#   x10: quadcopter, launches from a boat with the hand controller. ~40 min max flight;
+#        we give it 30 min of search after it arrives. ~15 m/s cruise (top ~20 m/s).
+#   f10: long-range (~120 miles) but needs LTE to talk to the ground. 45 m/s and
+#        60 min are the old defaults; the real cruise speed is unknown.
+DRONES = {"x10": dict(speed=15.0, endurance_min=30.0),
+          "f10": dict(speed=45.0, endurance_min=60.0)}
 
 
 def strategies(n_drones):
@@ -88,6 +99,8 @@ def main():
     ap.add_argument("--cue-ages", type=float, nargs="+", default=[0, 2, 4, 6, 8, 10, 15, 20, 30, 45, 60],
                     help="minutes between the satellite seeing the boat and the drone arriving")
     ap.add_argument("--trials", type=int, default=2000, help="random boats per cue age")
+    ap.add_argument("--drone", choices=sorted(DRONES), default=None,
+                    help="preset speed + search time; overrides --drone-speed and --endurance-min")
     ap.add_argument("--drone-speed", type=float, default=45.0, help="m/s")
     ap.add_argument("--sweep-radius", type=float, default=1000.0, help="m")
     ap.add_argument("--endurance-min", type=float, default=60.0)
@@ -102,6 +115,9 @@ def main():
     ap.add_argument("--seed", type=int, default=1)
     ap.add_argument("--out", default="results")
     args = ap.parse_args()
+    if args.drone:
+        args.drone_speed = DRONES[args.drone]["speed"]
+        args.endurance_min = DRONES[args.drone]["endurance_min"]
 
     drone = Drone(args.drone_speed, args.sweep_radius, args.endurance_min * 60)
     truth = BoatPrior(tuple(args.boat_speed_kn), args.cue_error)
