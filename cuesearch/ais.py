@@ -98,3 +98,22 @@ def sample_boats(tracks, n, horizon_s, rng, cue_error_m=100.0, min_sog_kn=2.0, d
         mean_kn[i] = np.hypot(x[-1], y[-1]) / horizon_s / KNOT
     info = dict(vessels=len(ids), straight_line_kn=mean_kn)
     return TrackBoats(xy=xy, dt_s=dt_s), info
+
+
+class TrackPrior:
+    """The searcher's guess cloud made of REAL past tracks instead of straight lines.
+
+    Drop-in for BoatPrior: the smart searches only call .sample(n, rng), and the ring
+    searches read .speed_kn. Build it from DIFFERENT days than the test boats, or the
+    searcher is peeking at the answers.
+    """
+
+    def __init__(self, tracks, horizon_s, cue_error_m=100.0, min_sog_kn=2.0):
+        self.tracks, self.horizon_s = tracks, horizon_s
+        self.cue_error_m, self.min_sog_kn = cue_error_m, min_sog_kn
+        _, info = sample_boats(tracks, 500, horizon_s, np.random.default_rng(0), cue_error_m, min_sog_kn)
+        # Typical straight-line speed of these tracks, for strategies that fly to a ring.
+        self.speed_kn = tuple(np.percentile(info["straight_line_kn"], [10, 90]))
+
+    def sample(self, n, rng):
+        return sample_boats(self.tracks, n, self.horizon_s, rng, self.cue_error_m, self.min_sog_kn)[0]

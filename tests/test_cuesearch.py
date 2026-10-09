@@ -247,6 +247,29 @@ def test_track_boats_match_straight_lines():
     check("after the track ends the boat stays put", np.allclose(turn.at(99.0), [[100, 100]]))
 
 
+def test_track_prior_from_fake_ais():
+    print("guessing from recorded tracks")
+    from cuesearch.ais import TrackPrior, sample_boats
+    t = np.arange(0.0, 7200.0, 60.0)
+    lat = 30.0 + t * (5 * KNOT) / 110_540.0       # heading due north at 5 kn
+    lon = np.full_like(t, -80.0)
+    tracks = {"a": (t, lat, lon, np.full_like(t, 5.0))}
+    boats, info = sample_boats(tracks, 30, 1800.0, np.random.default_rng(0), cue_error_m=0.0)
+    check("a 5 kn northbound track samples as ~5 kn", np.allclose(info["straight_line_kn"], 5.0, atol=0.05))
+    check("and goes north", np.allclose(boats.at(1800.0)[:, 1], 1800.0 * 5 * KNOT, rtol=0.01) and
+          np.allclose(boats.at(1800.0)[:, 0], 0.0, atol=1.0))
+    stopped = {"b": (t, np.full_like(t, 30.0), lon, np.zeros_like(t))}
+    try:
+        sample_boats(stopped, 5, 1800.0, np.random.default_rng(0))
+        check("a boat that never moves is never used", False)
+    except ValueError:
+        check("a boat that never moves is never used", True)
+    prior = TrackPrior(tracks, 1800.0, cue_error_m=0.0)
+    check("TrackPrior samples like a BoatPrior", len(prior.sample(7, np.random.default_rng(1))) == 7)
+    path = probability_greedy(300, Drone(), prior, seed=1)
+    check("the smart search runs on a TrackPrior", len(path.times) > 10)
+
+
 def test_wilson():
     print("confidence interval")
     lo, hi = wilson(0, 10)
@@ -267,6 +290,7 @@ if __name__ == "__main__":
     test_team()
     test_combos()
     test_track_boats_match_straight_lines()
+    test_track_prior_from_fake_ais()
     test_boats_never_share_the_searchers_random_stream()
     test_wilson()
     print()
