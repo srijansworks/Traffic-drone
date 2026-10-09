@@ -16,7 +16,9 @@ import numpy as np
 
 from cuesearch.evaluate import team_time_to_find, wilson
 from cuesearch.model import BoatPrior, Drone
-from search_sim import STRATEGIES, plan
+from cuesearch.ais import TrackPrior, sample_boats
+from real_tracks_sim import load_days
+from search_sim import STRATEGIES, boat_rng, plan
 
 # (id, label, true boat speeds, what the searchers believe)
 SCENARIOS = [
@@ -35,11 +37,53 @@ BOATS_SHOWN = 300                    # dots on screen per tip age
 CURVE_TRIALS = 1000                  # boats per point on the results chart
 PATH_EVERY_S = 10                    # keep one drone position per 10 s
 SEED = 1
+# Real-boat scenarios (needs the NOAA files in data/, see real_tracks_sim.py)
+REAL_TEST_DAY = ["data/AIS_2023_01_01.zip"]
+REAL_LEARN_DAYS = ["data/AIS_2023_01_02.zip", "data/AIS_2023_01_03.zip"]
+REAL_STRAIGHT_KN = (0.0, 12.0)       # the straight-line guess used for real fishing boats
+REAL_TRACK_EVERY_S = 30              # keep one boat position per 30 s
+
+
+def run_modes(drone, shown, curve_boats, guess_for, label):
+    """Plan every team and score it. guess_for(age_min) -> what the searchers believe."""
+    keep = int(PATH_EVERY_S / 2.0)   # paths are sampled every 2 s
+    cache = {}   # the same team shows up in more than one mode; plan it once
+
+    def team_for(name, age, n):
+        key = (name, age, n)
+        if key not in cache:
+            cache[key] = plan(name, age * 60, drone, guess_for(age), seed=SEED + 1000, n_drones=n)
+        return cache[key]
+
+    modes = []
+    for mid, mlabel, n, names in MODES:
+        playback = []
+        for age, boats in zip(PLAYBACK_AGES_MIN, shown):
+            runs = {}
+            for name in names:
+                team = team_for(name, age, n)
+                found = team_time_to_find(team, boats, drone.sweep_radius_m)
+                runs[name] = {
+                    "paths": [np.round(p.xy[::keep] / 1000, 3).tolist() for p in team],   # km
+                    "found_s": [None if np.isinf(t) else float(t) for t in found],
+                }
+            playback.append({"age_min": age, "runs": runs})
+        curve = {name: [] for name in names}
+        for age, boats in zip(CURVE_AGES_MIN, curve_boats):
+            for name in names:
+                k = int(np.isfinite(team_time_to_find(team_for(name, age, n), boats,
+                                                      drone.sweep_radius_m)).sum())
+                lo, hi = wilson(k, len(boats))
+                curve[name].append({"age_min": age, "found": k, "trials": len(boats),
+                                    "p": k / len(boats), "lo": lo, "hi": hi})
+        modes.append({"id": mid, "label": mlabel, "drones": n, "strategies": list(names),
+                      "playback": playback, "curve": curve})
+        print(f"{label}: {mlabel} done")
+    return modes
 
 
 def main():
     drone = Drone()
-    keep = int(PATH_EVERY_S / 2.0)   # paths are sampled every 2 s
     scenarios = []
     for sid, slabel, truth_kn, assumed_kn in SCENARIOS:
         truth, assumed = BoatPrior(truth_kn), BoatPrior(assumed_kn)
@@ -48,46 +92,43 @@ def main():
         # so 1 vs 3 drones vs combos is head-to-head on exactly the same boats.
         shown = [truth.sample(BOATS_SHOWN, rng) for _ in PLAYBACK_AGES_MIN]
         curve_boats = [truth.sample(CURVE_TRIALS, rng) for _ in CURVE_AGES_MIN]
-
-        cache = {}   # the same team shows up in more than one mode; plan it once
-
-        def team_for(name, age, n):
-            key = (name, age, n)
-            if key not in cache:
-                cache[key] = plan(name, age * 60, drone, assumed, seed=SEED + 1000, n_drones=n)
-            return cache[key]
-
-        modes = []
-        for mid, mlabel, n, names in MODES:
-            playback = []
-            for age, boats in zip(PLAYBACK_AGES_MIN, shown):
-                runs = {}
-                for name in names:
-                    team = team_for(name, age, n)
-                    found = team_time_to_find(team, boats, drone.sweep_radius_m)
-                    runs[name] = {
-                        "paths": [np.round(p.xy[::keep] / 1000, 3).tolist() for p in team],   # km
-                        "found_s": [None if np.isinf(t) else float(t) for t in found],
-                    }
-                playback.append({"age_min": age, "runs": runs})
-            curve = {name: [] for name in names}
-            for age, boats in zip(CURVE_AGES_MIN, curve_boats):
-                for name in names:
-                    k = int(np.isfinite(team_time_to_find(team_for(name, age, n), boats,
-                                                          drone.sweep_radius_m)).sum())
-                    lo, hi = wilson(k, CURVE_TRIALS)
-                    curve[name].append({"age_min": age, "found": k, "trials": CURVE_TRIALS,
-                                        "p": k / CURVE_TRIALS, "lo": lo, "hi": hi})
-            modes.append({"id": mid, "label": mlabel, "drones": n, "strategies": list(names),
-                          "playback": playback, "curve": curve})
-            print(f"{slabel}: {mlabel} done")
-
         scenarios.append({
             "id": sid, "label": slabel,
             "truth_kn": list(truth_kn), "assumed_kn": list(assumed_kn),
             "boats": [{"offset_km": np.round(b.offset / 1000, 4).tolist(),
                        "velocity_kms": np.round(b.velocity / 1000, 6).tolist()} for b in shown],
-            "modes": modes,
+            "modes": run_modes(drone, shown, curve_boats, lambda age, a=assumed: a, slabel),
+        })
+
+    # Real boats: NOAA AIS fishing-vessel paths (see cuesearch/ais.py). Both real
+    # scenarios hunt the SAME real boats; only the searchers' guess differs.
+    tracks = load_days(REAL_TEST_DAY, [30])
+    learned = load_days(REAL_LEARN_DAYS, [30])
+    horizon = lambda age: age * 60 + drone.endurance_s
+    shown = [sample_boats(tracks, BOATS_SHOWN, horizon(a), boat_rng(SEED, a))[0] for a in PLAYBACK_AGES_MIN]
+    curve_boats = [sample_boats(tracks, CURVE_TRIALS, horizon(a), boat_rng(SEED + 1, a))[0]
+                   for a in CURVE_AGES_MIN]
+    step = int(REAL_TRACK_EVERY_S / shown[0].dt_s)
+    real_boats = [{"dt_s": b.dt_s * step, "track_km": np.round(b.xy[:, ::step] / 1000, 3).tolist()}
+                  for b in shown]
+    straight = BoatPrior(REAL_STRAIGHT_KN)
+    priors = {}
+
+    def learned_for(age):
+        if age not in priors:
+            priors[age] = TrackPrior(learned, horizon(age))
+        return priors[age]
+
+    for sid, slabel, guess_for, guess_txt in [
+        ("real_straight", "Real fishing boats, straight-line guess", lambda age: straight,
+         f"{REAL_STRAIGHT_KN[0]:.0f}–{REAL_STRAIGHT_KN[1]:.0f} knots, straight lines"),
+        ("real_learned", "Real fishing boats, learned guess", learned_for,
+         "real fishing tracks from Jan 2–3"),
+    ]:
+        scenarios.append({
+            "id": sid, "label": slabel, "real": True, "guess_txt": guess_txt,
+            "boats_ref": "real_boats",
+            "modes": run_modes(drone, shown, curve_boats, guess_for, slabel),
         })
 
     data = {
@@ -100,6 +141,7 @@ def main():
         "path_every_s": PATH_EVERY_S,
         "ages_min": PLAYBACK_AGES_MIN,
         "scenarios": scenarios,
+        "real_boats": real_boats,
     }
     os.makedirs("demo", exist_ok=True)
     with open(os.path.join("demo", "demo_data.js"), "w") as f:

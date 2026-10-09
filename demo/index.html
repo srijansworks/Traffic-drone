@@ -285,7 +285,7 @@ td small { color: var(--muted); }
   <header>
     <div class="eyebrow">Drone search simulation · satellite tip to boat found</div>
     <h1>A satellite spots a boat. By the time the drone gets there, the boat has moved.</h1>
-    <p class="lede">Pick how old the tip is when the drone arrives, then press play. Every dot is a place the boat could really be. A dot lights up when a drone spots it. Every panel and every team hunts the same 300 boats. Switch "Boat speed guess" to see what happens when the searchers are told the wrong boat speeds.</p>
+    <p class="lede">Pick how old the tip is when the drone arrives, then press play. Every dot is a place the boat could really be. A dot lights up when a drone spots it. Every panel and every team hunts the same 300 boats. Switch "Boats" to see what happens when the searchers are told the wrong boat speeds, or to watch real fishing boats from ship-tracking data that turn, wander, and stop.</p>
   </header>
 
   <div class="controls" aria-label="Playback controls">
@@ -294,7 +294,7 @@ td small { color: var(--muted); }
       <div class="seg" role="group" aria-labelledby="modelbl" id="modes"></div>
     </div>
     <div class="group">
-      <span class="label" id="scenlbl">Boat speed guess</span>
+      <span class="label" id="scenlbl">Boats</span>
       <div class="seg" role="group" aria-labelledby="scenlbl" id="scens"></div>
     </div>
     <div class="group">
@@ -354,7 +354,7 @@ td small { color: var(--muted); }
   <section class="results" aria-labelledby="as-h">
     <h3 id="as-h">What the simulation assumes</h3>
     <dl class="assume" id="assume"></dl>
-    <p class="caveat">These are assumptions, not field data. The two that matter most: how far a drone's camera can really spot a small boat at sea, and whether boats hold a straight course. Real boats turn, stop, and hide near the coast; the playback above uses straight-line boats, and the real-boat section shows what changes.</p>
+    <p class="caveat">These are assumptions, not field data. The two that matter most: how far a drone's camera can really spot a small boat at sea, and whether boats hold a straight course. The straight-line boats hold one course; the real-boat options replay recorded fishing-boat paths, which turn, wander, and stop.</p>
   </section>
 </div>
 
@@ -426,12 +426,14 @@ td small { color: var(--muted); }
   const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
   const scen = () => D.scenarios[scenIdx];
   const mode = () => scen().modes[modeIdx];
-  const vmin = () => scen().truth_kn[0] * KNOT_KMS, vmax = () => scen().truth_kn[1] * KNOT_KMS;
+  const isReal = () => !!scen().real;
+  const vmin = () => isReal() ? 0 : scen().truth_kn[0] * KNOT_KMS, vmax = () => isReal() ? 0 : scen().truth_kn[1] * KNOT_KMS;
   const S = () => mode().strategies;
   const nameOf = key => META[key][mode().drones][0];
   const noteOf = key => META[key][mode().drones][1];
   const pb = () => mode().playback[ageIdx];
-  const boats = () => scen().boats[ageIdx];
+  const boats = () => (scen().boats || D[scen().boats_ref])[ageIdx];
+  const nB = () => (boats().offset_km || boats().track_km).length;
   const ageMin = () => D.ages_min[ageIdx];
   const arrival = () => ageMin() * 60;
   const total = () => arrival() + END_S;
@@ -440,7 +442,7 @@ td small { color: var(--muted); }
   let panels = [];
   function buildPanels() {
     $("panels").innerHTML = "";
-    const n = boats().offset_km.length;
+    const n = nB();
     panels = S().map(key => {
       const el = document.createElement("article");
       el.className = "panel";
@@ -489,16 +491,19 @@ td small { color: var(--muted); }
 
   // ---- geometry helpers
   function boatAt(i, tt) {
-    const o = boats().offset_km[i], v = boats().velocity_kms[i];
+    const b = boats();
+    if (b.track_km) return pointAt(b.track_km[i], tt, b.dt_s);   // real boat: follow its recorded path
+    const o = b.offset_km[i], v = b.velocity_kms[i];
     return [o[0] + v[0] * tt, o[1] + v[1] * tt];
   }
-  function pointAt(path, s) {
-    const f = Math.max(0, Math.min(s / D.path_every_s, path.length - 1));
+  function pointAt(path, s, every = D.path_every_s) {
+    const f = Math.max(0, Math.min(s / every, path.length - 1));
     const i = Math.floor(f), k = f - i, a = path[i], b = path[Math.min(i + 1, path.length - 1)];
     return [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k];
   }
   function viewRadius(tt) {
     let r = vmax() * tt + 0.4;
+    if (isReal()) for (let i = 0; i < nB(); i++) { const p = boatAt(i, tt); r = Math.max(r, Math.hypot(p[0], p[1]) + 0.4); }
     const s = tt - arrival();
     if (s > 0) for (const key of S()) for (const path of pb().runs[key].paths) {
       const n = Math.min(Math.floor(s / D.path_every_s), path.length - 1);
@@ -516,7 +521,7 @@ td small { color: var(--muted); }
     const tt = t, s = tt - arrival(), R = viewRadius(tt);
     const col = { sea: css("--sea"), grid: css("--grid"), boat: css("--boat"), ink: css("--ink"),
                   muted: css("--muted"), panel: css("--panel"), mono: css("--mono") };
-    const nBoats = boats().offset_km.length;
+    const nBoats = nB();
     const pos = Array.from({ length: nBoats }, (_, i) => boatAt(i, tt));
 
     for (const p of panels) {
@@ -544,7 +549,7 @@ td small { color: var(--muted); }
       }
 
       ctx.setLineDash([4, 4]); ctx.strokeStyle = col.muted; ctx.lineWidth = 1.2;
-      for (const r of [vmin() * tt, vmax() * tt]) if (r * k > 2) {
+      if (!isReal()) for (const r of [vmin() * tt, vmax() * tt]) if (r * k > 2) {
         ctx.beginPath(); ctx.arc(cx, cy, r * k, 0, Math.PI * 2); ctx.stroke();
       }
       ctx.setLineDash([]);
@@ -717,15 +722,28 @@ td small { color: var(--muted); }
 
   function buildAssumptions() {
     const mph = Math.round(A.drone_speed_ms * 2.23694);
-    const [t0, t1] = scen().truth_kn, [a0, a1] = scen().assumed_kn;
-    const wrong = t0 !== a0 || t1 !== a1;
-    $("ringkey").textContent = `How far the boat could have gone (${t0}–${t1} knots)`;
+    let boatRows;
+    if (isReal()) {
+      $("ringkey").parentElement.hidden = true;
+      boatRows = [
+        ["Boats", "Real fishing boats", "NOAA ship tracking (AIS), US waters, Jan 1 2023; moving at the tip"],
+        ["Searchers' guess", scen().guess_txt, "what the smart searches plan with"],
+      ];
+    } else {
+      $("ringkey").parentElement.hidden = false;
+      const [t0, t1] = scen().truth_kn, [a0, a1] = scen().assumed_kn;
+      const wrong = t0 !== a0 || t1 !== a1;
+      $("ringkey").textContent = `How far the boat could have gone (${t0}–${t1} knots)`;
+      boatRows = [
+        ["Real boat speed", `${t0}–${t1} knots`, "random, straight course"],
+        ["Searchers think boats go", `${a0}–${a1} knots`, wrong ? "wrong on purpose: some boats stop or go faster" : "matches the real boats"],
+      ];
+    }
     $("assume").innerHTML = [
       ["Drone speed", `${A.drone_speed_ms} m/s`, `about ${mph} mph, like a fixed-wing`],
       ["Drone can spot a boat within", `${A.sweep_radius_km} km`, "a guess; the biggest unknown"],
       ["Search time on station", `${A.endurance_min} min`, "after reaching the tip location"],
-      ["Real boat speed", `${t0}–${t1} knots`, "random, straight course"],
-      ["Searchers think boats go", `${a0}–${a1} knots`, wrong ? "wrong on purpose: some boats stop or go faster" : "matches the real boats"],
+      ...boatRows,
       ["Satellite position error", `±${A.cue_error_m} m`, "one standard deviation"],
     ].map(([k, v, n]) => `<div><dt>${k}</dt><dd>${v}<small>${n}</small></dd></div>`).join("");
   }
