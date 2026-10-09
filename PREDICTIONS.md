@@ -357,3 +357,33 @@ instead of 10–30. Last time: 79.4%.
 
 12. "I think the X10 can find 30% in a 10 minute tip, and 10% for a 30 min tip."
 13. "I think it will still result around 80%"
+
+### Actual (2026-10-09)
+
+**12. Three X10s vs slow boats (0–12 kn):**
+
+| Tip age | Shared map | Standard spiral ×3 |
+|---|---|---|
+| 10 min | 80.1% | 61.6% |
+| 30 min | 40.1% | 27.9% |
+
+I guessed 30% and 10%. Both way too low.
+
+**13. Guessing boat speed high (assume 10–40, really 0–40), 2 min tip:** 97.9% (2000 boats;
+the 4000-boat breakdown run got 98.3%). Last time with the low guess: 79.4%. Earlier, the
+same boats with the exactly right guess got 98.2%. Breakdown: every speed group 100%
+except 35–40 kn at 86.1%.
+
+I guessed it would stay around 80%. Wrong.
+
+### What I learned
+
+- Cheap quadcopters DO work for slow boats. Three X10s find 80% of slow boats from a
+  10-minute tip, vs 11.6% of 10–30 kn boats. So the X10 fits illegal fishing (slow
+  boats); the F10 fits fast drug boats.
+- With slow boats, the smart search still wins, but by less (80 vs 62). Slow boats don't
+  get far, so even the plain spiral reaches a lot of them. The smart search matters most
+  when boats are fast.
+- Guessing boat speed too high costs almost nothing (97.9% vs 98.2% with the exact right
+  guess). Guessing too low costs ~19 points (79.4%). So the rule is: when unsure, tell
+  the search the boats might be faster than you think.
