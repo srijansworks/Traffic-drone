@@ -387,3 +387,17 @@ I guessed it would stay around 80%. Wrong.
 - Guessing boat speed too high costs almost nothing (97.9% vs 98.2% with the exact right
   guess). Guessing too low costs ~19 points (79.4%). So the rule is: when unsure, tell
   the search the boats might be faster than you think.
+
+---
+
+## Experiment 14: real fishing-boat paths (2026-10-09)
+
+Three X10-like drones (15 m/s, 30 min), 10 min tip, search assumes 0–12 kn. Boats are
+REAL US fishing vessels (AIS type 30) from NOAA data for Jan 1 2023: a random vessel,
+a random moment it was moving at 2+ kn, then where it really went (real_tracks_sim.py).
+On straight-line 0–12 kn boats (experiment 12): smart 80.1%, spiral 61.6%.
+
+### My prediction (my words)
+
+"I think both of them will significantly reduce in number. Smart will avg. 50-60% and
+spiral will avg. 30-40%"
