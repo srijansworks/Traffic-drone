@@ -401,3 +401,29 @@ On straight-line 0–12 kn boats (experiment 12): smart 80.1%, spiral 61.6%.
 
 "I think both of them will significantly reduce in number. Smart will avg. 50-60% and
 spiral will avg. 30-40%"
+
+### Actual (2026-10-09)
+
+| | Straight-line 0–12 kn (exp 12) | Real fishing paths |
+|---|---|---|
+| Smart, shared map | 80.1% | 88.1% |
+| Standard spiral ×3 | 61.6% | 80.1% |
+
+(2000 test boats drawn from 251 different vessels, so the real uncertainty is bigger than
+the ±1.5% the confidence interval says: many test boats are the same vessel at another
+moment. Only one day of data.)
+
+I guessed both would drop a lot (smart 50–60, spiral 30–40). Both went UP. Wrong direction.
+
+### What I learned
+
+- Real fishing boats are EASIER to find than my straight-line boats, because they don't
+  go anywhere fast: they wander, turn, and loiter near where they were seen. Over an
+  hour most end up only a few knots' worth from the start.
+- That helps the plain spiral the most (61.6 → 80.1), since a spiral is built for targets
+  that stay near the start. The smart search's lead shrank from 18 points to 8.
+- So for illegal fishing with a fresh-ish tip, even simple searches do OK. The smart
+  search matters most for boats that are actually running: fast boats, or a boat that
+  knows it was spotted. These AIS boats weren't hiding from anyone.
+- Next: test older tips (30–60 min) on real paths, and other days of data, and look at
+  real fast boats (not just fishing).
