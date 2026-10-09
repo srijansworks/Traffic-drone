@@ -445,3 +445,36 @@ tip, search assumes 10–40 kn. Straight-line 10–30 kn boats: smart 51.8%, spi
 15. "smart gets 64% spiral gets 50%, for 60 minutes, smart gets 40% and spiral gets 15%"
     (30 min tip: smart 64, spiral 50. 60 min tip: smart 40, spiral 15.)
 16. "smart will get 40% and spiral gets 0%"
+
+### Actual (2026-10-09)
+
+**15. Real fishing paths, three X10s:**
+
+| Tip age | Smart, shared map | Standard spiral ×3 |
+|---|---|---|
+| 10 min (exp 14) | 88.1% | 80.1% |
+| 30 min | 55.8% | 54.8% |
+| 60 min | 39.9% | 35.1% |
+
+I guessed 30 min: smart 64, spiral 50. 60 min: smart 40, spiral 15. Smart at 60 min was
+spot on; the spiral did much better than I thought.
+
+**16. Real fast boats (pleasure craft at 15+ kn), three F10s, 10 min tip:**
+smart 54.9%, spiral 49.5%. (Straight-line 10–30 kn boats: 51.8% vs 1.7%.)
+
+I guessed smart 40, spiral 0. The spiral was way off.
+
+### What I learned
+
+- On real paths, my smart search barely beats the plain spiral: +8, +1, +5 points on
+  fishing boats and +5 on fast boats. On straight-line boats it won by 12 to 50 points.
+- The reason: real boats, even fast ones, slow down, turn, stop, and stay closer to where
+  they were seen than a straight-line boat would. My smart search assumes every boat
+  keeps going straight at 10–40 kn, so it flies out to a ring where real boats mostly
+  aren't. The spiral searches near the start, which is where real boats end up.
+- So my model's biggest weak spot is the straight-line boat. The smart search is only as
+  good as its guess about how boats move.
+- Fix to test next: let the smart search guess using REAL past tracks (from a different
+  day, so it isn't cheating) instead of straight lines.
+- Caveat: these AIS boats aren't running from anyone. A boat that knows it was spotted
+  might really go straight and fast. I need a real patrol person to tell me which is true.
