@@ -478,3 +478,17 @@ I guessed smart 40, spiral 0. The spiral was way off.
   day, so it isn't cheating) instead of straight lines.
 - Caveat: these AIS boats aren't running from anyone. A boat that knows it was spotted
   might really go straight and fast. I need a real patrol person to tell me which is true.
+
+---
+
+## Experiment 17: smart search that learns from real tracks (2026-10-09)
+
+Same as experiments 14–15 (real Jan 1 fishing paths, three X10-like drones), but the
+smart search's guess cloud is real fishing tracks from Jan 2 and 3 (different days, so
+it can't peek at the test boats) instead of straight lines at 0–12 kn. The spiral
+doesn't use guesses, so it stays 80.1 / 54.8 / 35.1%. Old straight-line smart search:
+88.1 / 55.8 / 39.9% at 10 / 30 / 60 min.
+
+### My prediction (my words)
+
+"smart gets 85% at 10, 60% at 30, 45% at 60"
