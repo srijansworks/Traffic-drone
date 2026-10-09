@@ -269,6 +269,16 @@ td small { color: var(--muted); }
 .assume dd { margin: 0; font: 600 20px/1.15 var(--display); }
 .assume dd small { font: 400 13px/1.3 var(--body); color: var(--ink-2); display: block; margin-top: 2px; }
 .caveat { margin: 0; font-size: 15px; color: var(--ink-2); max-width: 75ch; }
+.real { display: grid; gap: 22px; }
+.real h4 { margin: 0 0 6px; font: 600 19px/1.2 var(--display); }
+.rbars { display: grid; gap: 14px; }
+.rage { display: grid; gap: 5px; }
+.rage > span { font: 500 12px/1 var(--mono); color: var(--muted); letter-spacing: .04em; }
+.rrow { display: grid; grid-template-columns: minmax(120px, 210px) 1fr 52px; align-items: center; gap: 10px; font-size: 14px; }
+.rrow .track { height: 12px; background: var(--sea); border-radius: 3px; position: relative; overflow: hidden; }
+.rrow .fill { position: absolute; inset: 0 auto 0 0; border-radius: 3px; }
+.rrow b { font: 500 14px/1 var(--mono); text-align: right; font-variant-numeric: tabular-nums; }
+@media (max-width: 560px) { .rrow { grid-template-columns: 1fr 48px; } .rrow .track { grid-column: 1 / -1; grid-row: 2; } }
 </style>
 
 <div class="wrap">
@@ -334,14 +344,53 @@ td small { color: var(--muted); }
     </details>
   </section>
 
+  <section class="results" aria-labelledby="real-h" id="realsec" hidden>
+    <h3 id="real-h">Real boats: does the smart search still win?</h3>
+    <p class="sub">Same searches, but the boats are real vessels from NOAA ship-tracking (AIS) data for Jan 1, 2023 in US waters: a random boat, a random moment it was moving, then where it actually went. Real boats slow down, turn, and stop. A smart search that assumes straight lines loses most of its lead; one that learns from real tracks on other days (Jan 2–3) gets much of it back.</p>
+    <div class="real" id="real"></div>
+    <p class="caveat">These boats had their trackers on and weren't running from anyone. 2,000 test boats per row, drawn from about 200–250 different vessels, so the real uncertainty is bigger than a single run suggests. One test day only.</p>
+  </section>
+
   <section class="results" aria-labelledby="as-h">
     <h3 id="as-h">What the simulation assumes</h3>
     <dl class="assume" id="assume"></dl>
-    <p class="caveat">These are assumptions, not field data. The two that matter most: how far a drone's camera can really spot a small boat at sea, and whether boats hold a straight course. Real boats turn, stop, and hide near the coast; this version doesn't model that yet.</p>
+    <p class="caveat">These are assumptions, not field data. The two that matter most: how far a drone's camera can really spot a small boat at sea, and whether boats hold a straight course. Real boats turn, stop, and hide near the coast; the playback above uses straight-line boats, and the real-boat section shows what changes.</p>
   </section>
 </div>
 
 <script src="demo_data.js"></script>
+<script src="real_results.js"></script>
+<script>
+(() => {
+  const R = window.REAL, root = document.getElementById("real");
+  if (!R || !root) return;
+  const SERIES = [["spiral", "Standard spiral ×3", "--s2"], ["smart", "Smart, assumes straight lines", "--s1"],
+                  ["learned", "Smart, learned from real tracks", "--s3"]];
+  for (const g of R.groups) {
+    const box = document.createElement("div");
+    const h = document.createElement("h4"); h.textContent = g.label; box.append(h);
+    const bars = document.createElement("div"); bars.className = "rbars";
+    for (const r of g.rows) {
+      const age = document.createElement("div"); age.className = "rage";
+      const t = document.createElement("span"); t.textContent = `Tip ${r.age_min} min old · ${r.vessels} vessels`; age.append(t);
+      for (const [key, name, color] of SERIES) {
+        if (!r[key]) continue;
+        const row = document.createElement("div"); row.className = "rrow";
+        const pct = (100 * r[key].p).toFixed(1);
+        row.innerHTML = `<span></span><div class="track"><div class="fill"></div></div><b>${pct}%</b>`;
+        row.querySelector("span").textContent = name;
+        const fill = row.querySelector(".fill");
+        fill.style.width = `${pct}%`; fill.style.background = `var(${color})`;
+        row.title = `95% CI ${(100 * r[key].lo).toFixed(1)}–${(100 * r[key].hi).toFixed(1)}%`;
+        age.append(row);
+      }
+      bars.append(age);
+    }
+    box.append(bars); root.append(box);
+  }
+  document.getElementById("realsec").hidden = false;
+})();
+</script>
 <script>
 (() => {
   const D = window.DEMO;
