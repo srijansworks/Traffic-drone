@@ -340,3 +340,20 @@ I got the direction right (fast boats are the problem) but not how big.
 - With a fresh 2 min tip, stopped boats aren't a problem at all: they're still near the
   tip spot where the drones start. ALL the misses are boats faster than the searchers
   assumed (30+ kn). So if I'm unsure about boat speed, guess too high, not too low.
+
+---
+
+## Experiments 12–13: X10 vs slow boats, guessing boat speed high (2026-10-09)
+
+**Experiment 12: can the X10 catch slow boats?** 3 X10-like drones (15 m/s, 30 min),
+shared map. Boats are slow, like fishing boats: 0–12 kn, and the search knows that.
+Tips 10 and 30 min old.
+
+**Experiment 13: does guessing high fix the misses?** Same as experiment 11 (3 drones
+F10-like, shared map, 2 min tip, boats really 0–40 kn) but the search assumes 10–40 kn
+instead of 10–30. Last time: 79.4%.
+
+### My predictions (my words)
+
+12. "I think the X10 can find 30% in a 10 minute tip, and 10% for a 30 min tip."
+13. "I think it will still result around 80%"
