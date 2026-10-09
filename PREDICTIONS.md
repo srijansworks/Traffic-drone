@@ -492,3 +492,24 @@ doesn't use guesses, so it stays 80.1 / 54.8 / 35.1%. Old straight-line smart se
 ### My prediction (my words)
 
 "smart gets 85% at 10, 60% at 30, 45% at 60"
+
+### Actual (2026-10-09)
+
+| Tip age | Spiral | Smart, straight-line guess | Smart, learned from real tracks |
+|---|---|---|---|
+| 10 min | 80.1% | 88.1% | 92.2% |
+| 30 min | 54.8% | 55.8% | 61.5% |
+| 60 min | 35.1% | 39.9% | 47.1% |
+
+I guessed 85 / 60 / 45. Close at 30 and 60 min; 10 min came out higher.
+
+### What I learned
+
+- Learning from real tracks fixes most of the problem. The smart search's lead over the
+  spiral went from +8 / +1 / +5 to +12 / +7 / +12 points.
+- It learned from different days than the test, so this isn't cheating: real fishing
+  boats move in similar ways from day to day, and the search can use that.
+- The bigger lesson: the search method matters, but knowing how boats really move
+  matters as much. That's exactly what to ask patrol people and what data to collect.
+- Still to check: fast boats with a learned guess, more test days, and boats that are
+  actually trying to escape (no public data for that).
