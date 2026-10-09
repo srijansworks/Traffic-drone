@@ -289,3 +289,54 @@ each speed group, 4000 boats.
 2. "45%" (three X10s)
 3. "I think it will find 80% of nearly stopped boats and 50% of the fastest boats."
    (0–5 kn: 80%, 35–40 kn: 50%)
+
+### Actual (2026-10-09)
+
+**9. Seed check, 10 min tip, seeds 1–5** (the seed changes both the boats and the search's guesses):
+
+| Seed | 1 drone smart | 3 drones shared map |
+|---|---|---|
+| 1 | 22.0% | 51.8% |
+| 2 | 21.7% | 51.6% |
+| 3 | 22.7% | 50.8% |
+| 4 | 21.6% | 52.2% |
+| 5 | 22.4% | 49.4% |
+
+Range: 1 drone 21.6–22.7%, 3 drones 49.4–52.2%. I guessed the highest would be 25% and
+50%. One drone stayed under my guess; 3 drones went slightly over.
+
+**10. X10 vs F10, 3 drones, 10 min tip:**
+
+| Drone | Shared map | Standard spiral ×3 |
+|---|---|---|
+| F10-like (45 m/s, 60 min) | 51.8% | 1.7% |
+| X10-like (15 m/s, 30 min) | 11.6% | 0.0% |
+
+I guessed 45% for the X10s. Actual 11.6%. Way off.
+
+**11. Which boats get missed** (3 drones shared map, 2 min tip, think 10–30 kn, really
+0–40 kn, 4000 boats; overall 79.4%):
+
+| True boat speed | Found |
+|---|---|
+| 0–25 kn (every group) | 100% |
+| 25–30 kn | 98.8% |
+| 30–35 kn | 31.7% |
+| 35–40 kn | 1.8% |
+
+I guessed 80% of nearly stopped boats (actual 100%) and 50% of the fastest (actual 1.8%).
+I got the direction right (fast boats are the problem) but not how big.
+
+### What I learned
+
+- The smart search isn't luck. Changing the random seed only moves it about 1 point
+  (1 drone) or 3 points (3 drones). The results are solid, inside this model.
+- The X10 is too slow for this job against fast boats. 15 m/s is about 29 knots, so a
+  30-knot boat is as fast as the drone. It can't catch up to boats that already have a
+  10-minute head start. The F10's speed is what makes this work.
+- That splits my use cases: slow boats (fishing boats, many under ~12 kn) might suit a
+  cheap quadcopter from a patrol boat. Go-fast drug boats need a fast fixed-wing like
+  the F10. I should test the X10 against slow boats next.
+- With a fresh 2 min tip, stopped boats aren't a problem at all: they're still near the
+  tip spot where the drones start. ALL the misses are boats faster than the searchers
+  assumed (30+ kn). So if I'm unsure about boat speed, guess too high, not too low.
