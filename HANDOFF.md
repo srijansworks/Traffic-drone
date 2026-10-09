@@ -1,4 +1,4 @@
-# Handoff: traffic-drone project (as of 2026-10-03)
+# Handoff: traffic-drone project (as of 2026-10-09)
 
 Read this first, then `README.md` and `PREDICTIONS.md`.
 
@@ -42,11 +42,25 @@ Read this first, then `README.md` and `PREDICTIONS.md`.
 
 ## Timeline and people
 
-- **Sunday 2026-10-04:** show my director the demo.
+- **2026-10-04:** showed my director (Esther Kim, TKS) the demo. Her direction: before
+  building more, understand the users' specific problem (one feature they need could
+  change the whole build). Get a warm intro through the Skydio engineer; make a list of
+  people to talk to (names, emails, LinkedIn) and share it with her.
 - **~Dec 10 2026:** TKS demo day.
-- A Skydio engineer meets with me monthly. The director can introduce me to people. The
-  question to ask a Coast Guard or maritime contact: *"How old are tips when you get them,
-  how far can a drone camera spot a small boat, and how do these boats actually move?"*
+- **Skydio engineer (monthly mentor) said (2026-10-09):** the F10 has ~120 miles of range
+  but needs LTE to talk to the ground station. The X10 can launch from ships and boats
+  with the handheld controller (likely how the Coast Guard uses it) and has a speaker
+  attachment. The Coast Guard is buying 125 X10Ds (announced Sept 2025).
+- **Outreach list (emails drafted, sent via ChatGPT):** Pacific Islands FFA Regional
+  Fisheries Surveillance Centre; Ted Schmitt and Namrata Kolla (Skylight, Ai2); Nick Wise
+  (OceanMind); Trygg Mat Tracking; David Kroodsma and Fernando Paolo (Global Fishing
+  Watch); Lawrence Stone (Metron, SAROPS); Marijana Peti (Univ. of Zagreb); USCG R&D
+  Center; Shield AI. Key questions: how old are tips, what do patrols do with them today,
+  how do boats really move, would a "fly here next" plan help.
+- **What's different about this project:** planning flight paths for drones to find a
+  boat that's moving away from an old satellite tip. SAROPS (Coast Guard) only models
+  drifting targets and plans back-and-forth boxes; Peti 2023 searched a small box with
+  live radar; Skylight sends satellites, not drones (~2 h to a follow-up image).
 
 ## The code (`~/Documents/traffic-drone`, a git repo)
 
@@ -57,8 +71,18 @@ python search_sim.py                    # 1 drone: standard vs ring vs smart
 python search_sim.py --drones 3         # teams: adds smart separate vs shared map
 python search_sim.py --drones 3 --strategies greedy_shared ring_then_smart guard_plus_smart
 python search_sim.py --assumed-speed-kn 10 30 --boat-speed-kn 0 40   # wrong speed guess
+python search_sim.py --drone x10 --drones 3   # Skydio X10-like (15 m/s, 30 min); also f10
+python failure_analysis.py --drones 3 --cue-age 2 --assumed-speed-kn 10 30 --boat-speed-kn 0 40
+python real_tracks_sim.py --drone x10 --drones 3 --cue-ages 10 30 60   # REAL fishing boat paths
+python real_tracks_sim.py --drone x10 --drones 3 --cue-ages 10 \
+    --searcher-tracks data/AIS_2023_01_02.zip data/AIS_2023_01_03.zip # search learns from other days
 python export_demo.py                   # regenerate demo/demo_data.js (~2 min)
+python export_real_results.py           # regenerate demo/real_results.js (~3 min)
 ```
+
+Real data: NOAA Marine Cadastre daily AIS files in `data/` (git-ignored, ~300 MB each):
+`curl -o data/AIS_2023_01_01.zip https://coast.noaa.gov/htdata/CMSP/AISDataHandler/2023/AIS_2023_01_01.zip`
+(and `_02`, `_03`). Jan 1 is the test day; Jan 2–3 are what the search learns from.
 
 | File | What it is |
 |---|---|
@@ -68,6 +92,10 @@ python export_demo.py                   # regenerate demo/demo_data.js (~2 min)
 | `cuesearch/evaluate.py` | Time to find, team time to find, Wilson 95% confidence interval |
 | `search_sim.py` | Runs experiments and writes `results*/` (git-ignored) with a CSV and 3 plots |
 | `export_demo.py`, `demo/` | Browser demo; the page only plays back what Python computed |
+| `cuesearch/ais.py` | Real AIS tracks → test boats (`sample_boats`) and a learned guess cloud (`TrackPrior`) |
+| `real_tracks_sim.py` | Runs the searches against real boat paths |
+| `failure_analysis.py` | Find rate inside each true-speed group |
+| `export_real_results.py` | Real-boat numbers for the demo page |
 | `PREDICTIONS.md` | Every prediction and result, in order |
 
 Git tag `v1-smart-search` = the single-drone smart search, saved as "solution v1".
@@ -97,7 +125,26 @@ each path is scored against thousands of random boats.
 | 1 drone, 2-min tip | 81.8 (a fresh tip beats 3 drones with a 10-min tip) |
 | Wrong speed guess, 3-drone shared map (right guess, same boats) | 43.4 (44.2); at 30 min: 15.2 (21.6) |
 
-Key takeaways: tips go stale in minutes. A shared map more than doubles one drone, while
+Since 2026-10-09 (after the random-number fix; experiments 9–17):
+
+| Setup | Result |
+|---|---|
+| Seed check, 5 seeds: 1 drone smart / 3 drones shared map | 21.6–22.7 / 49.4–52.2 (stable, not luck) |
+| 3 drones shared map: F10-like / X10-like (10–30 kn boats) | 51.8 / 11.6 (X10 can't catch fast boats) |
+| 3 X10s vs slow 0–12 kn boats, 10 / 30 min tip: smart / spiral | 80.1 / 61.6 and 40.1 / 27.9 |
+| 2 min tip, boats 0–40 kn: search guesses 10–30 / 10–40 / exactly right | 79.4 / 97.9 / 98.2 |
+| REAL fishing paths, 3 X10s, 10 / 30 / 60 min: spiral | 80.1 / 54.8 / 35.1 |
+| ...smart, straight-line guess | 88.1 / 55.8 / 39.9 |
+| ...smart, learned from real tracks on other days | 92.2 / 61.5 / 47.1 |
+| REAL fast boats (pleasure craft 15+ kn), 3 F10s, 10 min: smart / spiral | 54.9 / 49.5 |
+
+Newest takeaways: X10-class quadcopters fit slow boats (illegal fishing); fast boats
+need an F10-class drone. All misses come from boats faster than the search assumed, so
+guess speed high. On real paths the straight-line smart search barely beats the spiral,
+because real boats slow, turn, and stop; learning from real tracks brings the lead back.
+Knowing how boats really move matters as much as the search method.
+
+Older takeaways: tips go stale in minutes. A shared map more than doubles one drone, while
 3 separate drones mostly waste 2 of them. A fresh tip matters more than more drones. The
 smart search is only as good as its assumption about boat speed (it skips stopped boats).
 Full details are in `PREDICTIONS.md`.
@@ -113,24 +160,28 @@ been visually checked yet. If something looks broken, fix that first.
 
 ## Known issues and caveats
 
-- **Random-number quirk:** boats are drawn in order of tip age, so `--cue-ages 10` alone
-  gives different numbers than a run with several ages. Only compare runs that used the
-  same command. Fix idea: seed each age separately (this shifts the logged numbers slightly).
-- Each smart path comes from one random set of guesses. **Not yet checked with other
-  `--seed` values.** Some results (e.g. the 5 min wrong-guess oddity) may be noise.
-- Greedy only looks 2 minutes ahead, so it's not optimal. Sensor is cookie-cutter. Boats
-  never turn or stop mid-search.
-- An earlier AI session made two mistakes that were caught and fixed: a "fair baseline"
-  that was secretly the expanding square again, and a "wrong guess" test that didn't
-  actually give the searcher a wrong guess. Check AI-written experiments carefully.
+- AIS boats broadcast their position, so they're legal boats, not boats running from a
+  patrol. No public data exists for that; ask practitioners how fleeing boats behave.
+- Real-track results use one test day and ~200–250 vessels per row, so the true
+  uncertainty is bigger than the confidence intervals show. Fast-boat learned guess not
+  tested yet.
+- X10/F10 speeds and search times are guesses. The F10 needs LTE, which fades offshore;
+  plans are computed before launch, so a pre-loaded route might not need a live link (ask).
+- Greedy only looks 2 minutes ahead, so it's not optimal. Sensor is cookie-cutter
+  (perfect inside 1 km). No land, so boats and drones can cross coastlines.
+- Not yet compared with Brown's FAB algorithm (the classic moving-target search).
+- Tello demo scripts and `waypoint_follower.py` from an earlier AI session are still
+  uncommitted and unreviewed.
+- Earlier AI sessions made mistakes that were caught: a fake "fair baseline", a "wrong
+  guess" test that wasn't wrong, a seed fix that let the search see the answers, and a
+  misleading failure-analysis script. Check AI-written experiments carefully.
 
 ## Next steps (roughly in order)
 
-1. Visually check the demo; prepare for Sunday.
-2. Seed check: rerun key results with `--seed 2 3 4` to see how much they move.
-3. Failure analysis: which boats get missed (fast ones? stopped ones?) instead of guessing.
-4. Fix the per-age random-number quirk.
-5. Sensitivity: how results change with sensor range (`--sweep-radius`) and drone speed.
-6. Physical demo: Tello runs the smart search toward a stand-in target on grass
-   (the Tello drifts over water). Existing Tello code is in `~/Documents/dronefollow`.
-7. Get real numbers from a practitioner (tip age, detection range, boat behavior).
+1. Hear back from outreach and the Skydio engineer; rerun with real numbers (camera range,
+   drone speed, tip age).
+2. Real fast boats with a learned guess; more test days; other regions.
+3. Add Brown's FAB algorithm as an expert baseline.
+4. Review and commit the Tello demo code; physical demo on grass with the Tello
+   (`~/Documents/dronefollow`).
+5. Sensitivity: sensor range (`--sweep-radius`).
