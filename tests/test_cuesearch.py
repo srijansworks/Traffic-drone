@@ -13,7 +13,7 @@ import numpy as np
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from cuesearch.evaluate import team_time_to_find, time_to_find, wilson  # noqa: E402
-from cuesearch.model import KNOT, BoatPrior, Boats, Drone  # noqa: E402
+from cuesearch.model import KNOT, BoatPrior, Boats, Drone, TrackBoats  # noqa: E402
 from cuesearch.planners import expanding_square, probability_greedy, ring_search  # noqa: E402
 from cuesearch.team import (greedy_shared, guard_plus_smart, ring_team, ring_then_smart,  # noqa: E402
                             rotate, square_team)
@@ -228,6 +228,25 @@ def test_boats_never_share_the_searchers_random_stream():
     check("different ages -> different boats", not np.allclose(a, c))
 
 
+def test_track_boats_match_straight_lines():
+    print("recorded tracks")
+    boats = BoatPrior().sample(40, np.random.default_rng(3))
+    dt, horizon = 10.0, 4200.0
+    grid = np.arange(0, horizon + dt, dt)
+    tracks = TrackBoats(xy=boats.at(grid), dt_s=dt)
+    t = np.array([0.0, 5.0, 123.4, 4000.0])
+    check("a straight track replays like a straight-line boat", np.allclose(tracks.at(t), boats.at(t)))
+    check("scalar time works too", np.allclose(tracks.at(77.7), boats.at(77.7)))
+    path = probability_greedy(600, Drone(), BoatPrior(), seed=1)
+    a = time_to_find(path, boats, 1000.0)
+    b = time_to_find(path, tracks, 1000.0)
+    check("same find times for tracks and straight lines", np.allclose(a, b, equal_nan=True) and
+          np.array_equal(np.isfinite(a), np.isfinite(b)))
+    turn = TrackBoats(xy=np.array([[[0, 0], [100, 0], [100, 100]]], float), dt_s=10.0)
+    check("a turning track goes round the corner", np.allclose(turn.at(15.0), [[100, 50]]))
+    check("after the track ends the boat stays put", np.allclose(turn.at(99.0), [[100, 100]]))
+
+
 def test_wilson():
     print("confidence interval")
     lo, hi = wilson(0, 10)
@@ -247,6 +266,7 @@ if __name__ == "__main__":
     test_time_to_find()
     test_team()
     test_combos()
+    test_track_boats_match_straight_lines()
     test_boats_never_share_the_searchers_random_stream()
     test_wilson()
     print()

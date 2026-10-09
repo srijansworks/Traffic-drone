@@ -13,7 +13,7 @@ def time_to_find(path, boats, sweep_radius_m, chunk=500):
     search_t = path.times - path.times[0]
     for start in range(0, len(boats), chunk):
         sl = slice(start, start + chunk)
-        pos = _slice(boats, sl).at(path.times)                         # (n, N, 2)
+        pos = boats[sl].at(path.times)                         # (n, N, 2)
         hit = ((pos - path.xy[None, :, :]) ** 2).sum(axis=-1) <= r2    # (n, N)
         found = hit.any(axis=1)
         first = hit.argmax(axis=1)
@@ -24,10 +24,6 @@ def time_to_find(path, boats, sweep_radius_m, chunk=500):
 def team_time_to_find(paths, boats, sweep_radius_m):
     """Like time_to_find, but for several drones: found when the FIRST one sees it."""
     return np.min([time_to_find(p, boats, sweep_radius_m) for p in paths], axis=0)
-
-
-def _slice(boats, sl):
-    return type(boats)(offset=boats.offset[sl], velocity=boats.velocity[sl])
 
 
 def wilson(k, n, z=1.96):

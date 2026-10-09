@@ -32,6 +32,38 @@ class Boats:
     def __len__(self):
         return len(self.offset)
 
+    def __getitem__(self, sl):
+        return Boats(offset=self.offset[sl], velocity=self.velocity[sl])
+
+
+@dataclass
+class TrackBoats:
+    """Boats that follow recorded paths (real ship tracks) instead of straight lines.
+
+    xy[i, j] is boat i's position at time j * dt_s (metres, relative to the cue
+    point, t=0 = the satellite pass). Between samples the boat moves in a straight
+    line; after the last sample it stays put, so tracks must cover the whole search.
+    """
+
+    xy: np.ndarray  # (n, K, 2)
+    dt_s: float
+
+    def at(self, t):
+        t = np.asarray(t, dtype=float)
+        k = self.xy.shape[1]
+        u = np.clip(t / self.dt_s, 0, k - 1)
+        j = np.minimum(np.floor(u).astype(int), k - 2)
+        w = (u - j)[..., None]
+        if t.ndim == 0:
+            return self.xy[:, j] * (1 - w) + self.xy[:, j + 1] * w
+        return self.xy[:, j] * (1 - w[None]) + self.xy[:, j + 1] * w[None]
+
+    def __len__(self):
+        return len(self.xy)
+
+    def __getitem__(self, sl):
+        return TrackBoats(xy=self.xy[sl], dt_s=self.dt_s)
+
 
 @dataclass
 class BoatPrior:
