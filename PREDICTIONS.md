@@ -261,3 +261,31 @@ this but at a 1-minute tip it gave the searcher the exact same boats it was gues
 which would be cheating. Caught and fixed, with a test.) Results logged ABOVE this note
 used the old random numbers, so reruns of the same commands will come out slightly
 different. Compare new results only to runs made after this fix.
+
+---
+
+## Experiments 9–11: seed check, Skydio X10 vs F10, which boats get missed (2026-10-09)
+
+Run after the random-number fix (commit c2535ad). All at the default model unless
+noted (boats 10–30 kn, sees 1 km, 2000 boats per test unless noted).
+
+**Experiment 9: seed check.** Rerun at a 10 min tip with seeds 1–5. Is the smart search
+really good or did it get lucky with one set of guesses?
+- 1 drone smart search (was 21.9%), 3 drones shared map (was 49.8%).
+
+**Experiment 10: X10 vs F10.** 3 drones, shared map, 10 min tip.
+- F10-like: 45 m/s, 60 min search (same as the old default).
+- X10-like: 15 m/s, 30 min search (launched from a boat; numbers are guesses).
+
+**Experiment 11: which boats get missed.** 3 drones, shared map, 2 min tip, searchers
+think boats go 10–30 kn but really 0–40 kn (last time: 78.6% overall). Find rate inside
+each speed group, 4000 boats.
+
+### My predictions (my words)
+
+1. "I think the smart search has scope to be better than current standards. the highest
+   single drone mission can maybe yield 25%, and 3 drone mission can yield 50%."
+   (Highest of 5 seeds: 1 drone 25%, 3 drones 50%. No lowest given.)
+2. "45%" (three X10s)
+3. "I think it will find 80% of nearly stopped boats and 50% of the fastest boats."
+   (0–5 kn: 80%, 35–40 kn: 50%)
