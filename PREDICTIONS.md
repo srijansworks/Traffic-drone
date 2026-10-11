@@ -547,3 +547,21 @@ I guessed smart 40%, spiral 34% at 10 min. Actual 97.8% and 96.2%. Way too low.
 - The learned guess beats the straight-line guess most at 30 min (91.1 vs 85.3).
 - I keep underestimating how easy slow boats are for a fast drone. What makes this hard
   is tip age and boat speed, not the boats wandering.
+
+---
+
+## Experiments 19–22: FAB ceiling, shorter camera range, second test day, fast boats learned (2026-10-11)
+
+19. **FAB ceiling** (Brown 1980, cuesearch/fab.py): three F10-like drones, straight-line
+    10–30 kn boats, 10 min tip. The best possible plan if effort could be spread anywhere
+    at once. Smart shared map got 51.8%.
+20. **Camera sees only 500 m** instead of 1 km: same setup, smart shared map (was 51.8%).
+21. **Second test day:** three X10s, real fishing boats from Jan 4 (not Jan 1), learned
+    guess from Jan 2–3, 10 min tip. Jan 1 got 92.2%.
+22. **Real fast boats, learned guess:** three F10s, pleasure craft at 15+ kn, 10 min tip,
+    search learns from Jan 2–3 pleasure craft. Straight-line guess 54.9%, spiral 49.5%.
+
+### My predictions (my words)
+
+"1. 60% 2. 41% 3. 90% 4. 70%"
+(19: FAB 60%. 20: 41%. 21: 90%. 22: 70%.)
