@@ -595,3 +595,20 @@ fresh boats. 44.9% is the real number; the default is now 300,000.
 - Learning from real tracks also helps fast boats: 65.3% vs 54.9% with the straight-line
   guess, and the spiral's 49.5%. That's a 16-point lead for the smart search.
 - My guesses were close on the real-boat tests and too high on the model ones.
+
+---
+
+## Experiment 23: track until intercept (2026-10-11)
+
+Three F10-like drones, smart shared map, straight-line 10–30 kn boats, 10 min tip (finds
+51.8%). When a drone finds the boat it keeps watching until its battery runs out. A patrol
+boat starts 20 km from the tip spot at 25 kn and drives to meet the boat once it's found
+(intercept_sim.py). Caught = patrol reaches the boat while a drone is still watching.
+Two patrol plans: head to the tip spot right away, or wait until the boat is found.
+
+Question asked: "what % of the boats your search finds will the patrol actually catch?"
+
+### My prediction (my words)
+
+"okay keep it word for word, i'll guess 35%"
+(35% of the found boats get caught, about 18% of all boats.)
