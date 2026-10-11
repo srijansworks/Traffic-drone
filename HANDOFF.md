@@ -137,6 +137,10 @@ Since 2026-10-09 (after the random-number fix; experiments 9–17):
 | ...smart, straight-line guess | 88.1 / 55.8 / 39.9 |
 | ...smart, learned from real tracks on other days | 92.2 / 61.5 / 47.1 |
 | REAL fast boats (pleasure craft 15+ kn), 3 F10s, 10 min: smart / spiral | 54.9 / 49.5 |
+| ...same, smart with learned guess | 65.3 |
+| REAL fishing, Jan 4 test day, 3 X10s, 10 min: learned smart / spiral | 86.5 / 73.9 (lead holds) |
+| Brown's FAB (classic optimal, random-search detection), 3 F10s, 10–30 kn, 10 min | 44.9 (smart 51.8) |
+| Camera range 500 m instead of 1 km, 3 F10s shared map, 10 min | 28.1 (was 51.8) |
 
 Newest takeaways: X10-class quadcopters fit slow boats (illegal fishing); fast boats
 need an F10-class drone. All misses come from boats faster than the search assumed, so
@@ -150,6 +154,9 @@ smart search is only as good as its assumption about boat speed (it skips stoppe
 Full details are in `PREDICTIONS.md`.
 
 ## The demo
+
+3D replay (same data, three.js): https://claude.ai/artifact/7Cba79VGgUurc2FRPPMuy8,
+source `demo/search3d.html`. Republish it with demo_data.js copied from the 2D artifact.
 
 Private web page (Claude artifact): https://claude.ai/artifact/6c4bnppRiXypLGCs5YLV83.
 Source: `demo/index.html` + `demo/demo_data.js`. Switches: Team (1 drone / 3 drones /
@@ -169,7 +176,9 @@ been visually checked yet. If something looks broken, fix that first.
   plans are computed before launch, so a pre-loaded route might not need a live link (ask).
 - Greedy only looks 2 minutes ahead, so it's not optimal. Sensor is cookie-cutter
   (perfect inside 1 km). No land, so boats and drones can cross coastlines.
-- Not yet compared with Brown's FAB algorithm (the classic moving-target search).
+- Brown's FAB (`cuesearch/fab.py`, `fab_sim.py`) needs ~300k particles or it overfits
+  its own guesses. It assumes random-search detection, so it's not a ceiling for the
+  model's perfect 1 km camera.
 - Tello demo scripts and `waypoint_follower.py` from an earlier AI session are still
   uncommitted and unreviewed.
 - Earlier AI sessions made mistakes that were caught: a fake "fair baseline", a "wrong
@@ -181,7 +190,8 @@ been visually checked yet. If something looks broken, fix that first.
 1. Hear back from outreach and the Skydio engineer; rerun with real numbers (camera range,
    drone speed, tip age).
 2. Real fast boats with a learned guess; more test days; other regions.
-3. Add Brown's FAB algorithm as an expert baseline.
+3. Ask how reliable a drone camera is at spotting a small boat (perfect vs ~63% per pass
+   changes whether FAB-style planning beats the smart search).
 4. Review and commit the Tello demo code; physical demo on grass with the Tello
    (`~/Documents/dronefollow`).
 5. Sensitivity: sensor range (`--sweep-radius`).
