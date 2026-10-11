@@ -612,3 +612,28 @@ Question asked: "what % of the boats your search finds will the patrol actually 
 
 "okay keep it word for word, i'll guess 35%"
 (35% of the found boats get caught, about 18% of all boats.)
+
+### Actual (2026-10-11)
+
+| Search | Found | Caught, patrol heads to tip | Caught, patrol waits |
+|---|---|---|---|
+| Spiral ×3 | 1.7% | 1.7% | 1.4% |
+| Smart, shared map | 51.8% | 31.9% | 30.6% |
+
+So the patrol caught 31.9 / 51.8 = 62% of the boats the smart search found. I guessed 35%.
+Too low.
+
+Why the other 38% got away (smart search, head to tip; 1037 found, 639 caught, 398 lost):
+- Only 19 were lost because they were faster than the patrol (25+ kn).
+- 379 were slower than the patrol but got away because the drones' batteries ran out
+  before the patrol arrived. They were found later (median 26 min after the tip, vs 14
+  min for the ones caught), farther out, and the patrol needed more time to get there.
+
+### What I learned
+
+- Finding isn't catching: about 4 in 10 found boats still escape.
+- The problem is mostly NOT that boats outrun the patrol. It's that nobody is watching
+  by the time the patrol arrives. Relief drones (or longer battery) could fix most of it.
+- Sending the patrol toward the tip right away barely helped (31.9 vs 30.6), because it
+  starts only 20 km away and boats spread in every direction.
+- Next: test relief drones that keep watching after the batteries run out.
