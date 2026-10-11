@@ -637,3 +637,18 @@ Why the other 38% got away (smart search, head to tip; 1037 found, 639 caught, 3
 - Sending the patrol toward the tip right away barely helped (31.9 vs 30.6), because it
   starts only 20 km away and boats spread in every direction.
 - Next: test relief drones that keep watching after the batteries run out.
+
+---
+
+## Experiment 24: night (2026-10-11)
+
+Three F10-like drones, straight-line 10–30 kn boats, 10 min tip, at night: the thermal
+camera sees only 500 m and spots a boat on 70% of passes (guesses until a real operator
+answers). Normal smart search (crosses water off after one look) vs a night-aware smart
+search (each look only makes the water less likely, so it may look again). Daytime smart
+search: 51.8%. Spiral also run for reference.
+
+### My prediction (my words)
+
+"I think it will severley reduce in performance, around 35%, 2. maybe a bit better, 40%"
+(1: normal smart search at night 35%. 2: night-aware 40%.)
