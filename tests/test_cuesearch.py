@@ -306,6 +306,28 @@ def test_fab():
           f"{fab_p:.3f} vs {flat_plan.p_found(parts).mean():.3f}")
 
 
+def test_intercept():
+    print("patrol boat intercept")
+    from cuesearch.intercept import intercept_times, patrol_position
+    still = one_boat(5000, 0, 0, 0)
+    start = (20000.0, 0.0)
+    t = intercept_times(still, np.array([600.0]), 10000.0, start, 10.0, "wait", dt=1.0)
+    check("waiting patrol: 15 km at 10 m/s after a find at 600 s -> ~2100 s", abs(t[0] - 2100) <= 1, str(t))
+    t = intercept_times(still, np.array([600.0]), 10000.0, start, 10.0, "tip", dt=1.0)
+    check("patrol heading to the tip is 6 km closer by then -> ~1500 s", abs(t[0] - 1500) <= 1, str(t))
+    check("patrol stops at the tip spot", np.allclose(patrol_position(np.array([5000.0]), start, 10.0, "tip"), 0))
+    fleeing = one_boat(0, 0, -20, 0)
+    t = intercept_times(fleeing, np.array([600.0]), 20000.0, start, 10.0, "tip")
+    check("a boat faster than the patrol, running away, is never caught", np.isinf(t[0]))
+    t = intercept_times(still, np.array([600.0]), 1000.0, start, 10.0, "tip")
+    check("no catch if the drones stop watching first", np.isinf(t[0]))
+    t = intercept_times(still, np.array([np.inf]), 10000.0, start, 10.0, "tip")
+    check("a boat never found is never caught", np.isinf(t[0]))
+    tracks = TrackBoats(xy=still.at(np.arange(0, 10001, 10.0)), dt_s=10.0)
+    t2 = intercept_times(tracks, np.array([600.0]), 10000.0, start, 10.0, "tip", dt=1.0)
+    check("works the same for recorded tracks", abs(t2[0] - 1500) <= 1, str(t2))
+
+
 def test_wilson():
     print("confidence interval")
     lo, hi = wilson(0, 10)
@@ -326,6 +348,7 @@ if __name__ == "__main__":
     test_team()
     test_combos()
     test_track_boats_match_straight_lines()
+    test_intercept()
     test_fab()
     test_track_prior_from_fake_ais()
     test_boats_never_share_the_searchers_random_stream()
