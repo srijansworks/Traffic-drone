@@ -652,3 +652,25 @@ search: 51.8%. Spiral also run for reference.
 
 "I think it will severley reduce in performance, around 35%, 2. maybe a bit better, 40%"
 (1: normal smart search at night 35%. 2: night-aware 40%.)
+
+### Actual (2026-10-11)
+
+| Search, at night | Found |
+|---|---|
+| Spiral ×3 | 0.0% |
+| Normal smart search | 20.3% |
+| Night-aware smart search | 20.4% |
+
+(Daytime: 51.8%. Day camera range but 500 m only, experiment 20: 28.1%.)
+
+I guessed 35% and 40%. Both too high, and being night-aware didn't help at all.
+
+### What I learned
+
+- Night cuts the smart search from 51.8% to about 20%, more than half.
+- Most of that loss is the shorter range (500 m alone: 28.1%); the 70% spotting chance
+  takes it the rest of the way down (about 28 × 0.7 ≈ 20).
+- Telling the search its camera misses didn't help (20.3 vs 20.4). With fast boats that
+  keep moving away, going back to look again rarely pays off; new water is almost always
+  a better bet. So the fix for night is a better camera (range), not a smarter plan.
+- The real thermal range for a small boat is now the most important number to get.
