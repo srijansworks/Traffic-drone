@@ -525,3 +525,25 @@ numbers the demo page's results chart shows (1000 boats per point, export_demo.p
 ### My prediction (my words)
 
 "40% smart, 34% spiral."
+
+### Actual (2026-10-11)
+
+Three F10s on real fishing paths (1000 boats per point):
+
+| Tip age | Spiral | Smart, straight-line guess (0–12 kn) | Smart, learned guess |
+|---|---|---|---|
+| 10 min | 96.2% | 97.5% | 97.8% |
+| 30 min | 62.3% | 85.3% | 91.1% |
+| 60 min | 56.9% | 67.3% | 68.6% |
+
+I guessed smart 40%, spiral 34% at 10 min. Actual 97.8% and 96.2%. Way too low.
+
+### What I learned
+
+- Fast, long-flying F10s find almost every real fishing boat from a 10-minute tip, with
+  any search. Slow wandering boats plus a fast drone with an hour of battery is easy.
+- The smart search pays off once the tip is older: at 30 minutes it finds 91% vs 62% for
+  the spiral (+29 points), the biggest real-boat lead so far.
+- The learned guess beats the straight-line guess most at 30 min (91.1 vs 85.3).
+- I keep underestimating how easy slow boats are for a fast drone. What makes this hard
+  is tip age and boat speed, not the boats wandering.
