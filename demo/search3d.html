@@ -153,7 +153,7 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
   <header>
     <div class="eyebrow">Drone search · satellite tip to boat found · 3D replay</div>
     <h1>Watch the drones hunt for a boat that has already moved</h1>
-    <p class="lede">The gold beacon is where the satellite saw the boat. Every white boat is a place it could really be by now (at night they show as warm heat signatures); a boat lights up in the drones' colour the moment a camera cone passes over it. Drag to orbit, scroll or pinch to zoom.</p>
+    <p class="lede">The gold beacon is where the satellite saw the boat. Every white boat is a place it could really be by now (at night they show as warm heat signatures); a boat lights up in the drones' colour the moment a camera cone passes over it. Drag to orbit, scroll or pinch to zoom; the camera zooms itself to where the boats and drones are until you move it.</p>
   </header>
 
   <div class="controls" aria-label="Scenario controls">
@@ -175,6 +175,7 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
       </div>
     </div>
     <div class="viewbtns">
+      <button type="button" id="auto" aria-pressed="true">Auto zoom</button>
       <button type="button" id="orbit" aria-pressed="false">Orbit</button>
       <button type="button" id="follow" aria-pressed="false">Follow drone</button>
       <button type="button" id="reset">Reset view</button>
@@ -482,7 +483,10 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
   }
 
   // ===== world layout for the current scenario / age / search
-  let R = 10, alt = 1, size = 0.1;
+  // R: how far anything ever gets (sizes the sea and sky). F: the part worth looking at
+  // right now (most boats plus the drones); the camera, boats and drones scale with F.
+  let R = 10, alt = 1, size = 0.1, F = 10, Ftarget = 10, autoFrame = true, gridStep = 0;
+  function applyScale() { alt = Math.max(0.3, F * 0.09); size = F * 0.011; }
   function viewRadius() {
     let r = 4;
     const T = total();
@@ -494,33 +498,12 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
 
   function buildWorld() {
     R = viewRadius();
-    alt = Math.max(0.7, R * 0.075);
-    size = R * 0.0085;
     water.scale.setScalar(R * 12);
     sky.scale.setScalar(R * 14);
     waterMat.uniforms.uScale.value = R * 0.9;
     camera.far = R * 40; camera.near = R * 0.002; camera.updateProjectionMatrix();
 
-    gridGroup.clear();
-    kmTags.forEach(t => { t.el.remove(); tags.splice(tags.indexOf(t), 1); });
-    kmTags = [];
-    const step = ringStep(R);
-    for (let r = step; r <= R * 1.25; r += step) {
-      const l = new THREE.Line(unitCircle, gridMat);
-      l.scale.setScalar(r); l.position.y = 0.012;
-      gridGroup.add(l);
-      const kt = tag(`${r} km`, "km");
-      kt.pos.set(r * Math.cos(-0.6), 0.02, -r * Math.sin(-0.6));
-      kmTags.push(kt);
-    }
-
-    beam.scale.set(R * 0.004, alt * 2.2, R * 0.004);
-    beam.position.y = alt * 1.1;
-    tipTag.pos.set(0, alt * 2.25, 0);
-
-    $("corner").textContent = scen().night
-      ? `night · thermal camera sees ${camR() * 1000} m, spots ${Math.round(scen().p_detect * 100)}% of passes · rings every ${step} km`
-      : `rings every ${step} km · boats, drones and height not to scale`;
+    gridStep = 0;
     $("conekey").textContent = `Camera cone: sees boats within ${camR() >= 1 ? camR() + " km" : camR() * 1000 + " m"}${scen().night ? " (thermal, misses some)" : ""}`;
     $("ringkey").hidden = isReal();
 
@@ -531,14 +514,13 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
     drones = run().paths.map((path, j) => {
       const g = new THREE.Group();
       const plane = makePlane(c);
-      plane.scale.setScalar(R * 0.022);
       g.add(plane);
       const coneMat = new THREE.ShaderMaterial({
         transparent: true, depthWrite: false, side: THREE.DoubleSide, fog: false,
-        uniforms: { c: { value: c }, uTime: { value: 0 }, uH: { value: alt } },
+        uniforms: { c: { value: c }, uTime: { value: 0 }, uH: { value: 1 } },
         vertexShader: coneVS, fragmentShader: coneFS,
       });
-      const cone = new THREE.Mesh(new THREE.ConeGeometry(camR(), alt, 48, 1, true), coneMat);
+      const cone = new THREE.Mesh(new THREE.ConeGeometry(camR(), 1, 48, 1, true), coneMat);
       const footMat = new THREE.ShaderMaterial({
         transparent: true, depthWrite: false, fog: false,
         uniforms: { c: { value: c }, uTime: { value: 0 } },
@@ -560,15 +542,39 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
     applyTheme();
   }
 
+  const HOME_DIR = new THREE.Vector3(-0.62, 0.78, 1.12).normalize();
+  const frameDist = () => F * 2.7;
   function homePose() {
-    return { target: new THREE.Vector3(0, 0, 0), pos: new THREE.Vector3(-R * 0.62, R * 0.78, R * 1.12) };
+    return { target: new THREE.Vector3(0, 0, 0), pos: HOME_DIR.clone().multiplyScalar(frameDist()) };
+  }
+  function buildGrid() {
+    const step = ringStep(F * 1.6);
+    if (step === gridStep) return;
+    gridStep = step;
+    gridGroup.clear();
+    kmTags.forEach(t => { t.el.remove(); tags.splice(tags.indexOf(t), 1); });
+    kmTags = [];
+    for (let r = step, k = 0; r <= R * 1.25 && k < 60; r += step, k++) {
+      const l = new THREE.Line(unitCircle, gridMat);
+      l.scale.setScalar(r); l.position.y = 0.012;
+      gridGroup.add(l);
+      if (k < 6) {
+        const kt = tag(`${r} km`, "km");
+        kt.pos.set(r * Math.cos(-0.6), 0.02, -r * Math.sin(-0.6));
+        kmTags.push(kt);
+      }
+    }
+    $("corner").textContent = scen().night
+      ? `night · thermal camera sees ${camR() * 1000} m, spots ${Math.round(scen().p_detect * 100)}% of passes · rings every ${step} km`
+      : `rings every ${step} km · boats, drones and height not to scale`;
   }
   let intro = null;
   function resetView(animate) {
+    setAuto(true);
     const h = homePose();
     if (animate && !reduced) {
       intro = { t0: performance.now(), dur: 1800,
-                fromPos: new THREE.Vector3(-R * 1.6, R * 2.4, R * 2.6), toPos: h.pos,
+                fromPos: HOME_DIR.clone().multiplyScalar(frameDist() * 3.2), toPos: h.pos,
                 fromT: new THREE.Vector3(0, 0, 0), toT: h.target };
       camera.position.copy(intro.fromPos);
     } else {
@@ -610,7 +616,8 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
     const tt = t, s = tt - arrival(), r = run(), n = nB();
     cBoat.copy(pal("--boat")); cSeen.copy(col(META[stratKey].c));
     cFoam.copy(pal("--foam")); cWater.copy(pal("--water"));
-    let found = 0, nRipple = 0;
+    let found = 0, nRipple = 0, droneFar = 0;
+    const dist = [];
     const wp = wakeGeo.attributes.position.array, wc = wakeGeo.attributes.color.array;
     const bp = beaconGeo.attributes.position.array;
     let nBeacon = 0;
@@ -621,6 +628,7 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
         continue;
       }
       const p = boatAt(i, tt), q = boatAt(i, Math.max(0, tt - 20));
+      dist.push(Math.hypot(p[0], p[1]));
       const fs = r.found_s[i];
       const seen = s >= 0 && fs !== null && fs <= s;
       if (seen) found++;
@@ -657,6 +665,8 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
       }
     }
     for (let j = nRipple; j < RIPPLES; j++) ripples[j].visible = false;
+    dist.sort((a, b) => a - b);
+    const most = dist.length ? dist[Math.floor(dist.length * 0.85)] : 3;
     wakeGeo.setDrawRange(0, n * (WAKE_N - 1) * 2);
     wakeGeo.attributes.position.needsUpdate = true;
     wakeGeo.attributes.color.needsUpdate = true;
@@ -683,11 +693,14 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
       const hd = Math.atan2(here[1] - prev[1], here[0] - prev[0]);
       const hd2 = Math.atan2(prev[1] - prev2[1], prev[0] - prev2[0]);
       let turn = hd - hd2; turn = Math.atan2(Math.sin(turn), Math.cos(turn));
+      droneFar = Math.max(droneFar, Math.hypot(here[0], here[1]) + camR());
       d.g.position.set(here[0], alt, -here[1]);
+      d.plane.scale.setScalar(F * 0.03);
+      d.cone.scale.y = alt;
       d.plane.rotation.set(Math.max(-0.6, Math.min(0.6, -turn * 4)), Math.hypot(here[0] - prev[0], here[1] - prev[1]) > 1e-6 ? hd : d.plane.rotation.y, 0, "YXZ");
       d.cone.position.set(here[0], alt / 2, -here[1]);
       d.foot.position.set(here[0], 0.025, -here[1]);
-      d.tag.pos.set(here[0], alt + R * 0.03, -here[1]);
+      d.tag.pos.set(here[0], alt + F * 0.04, -here[1]);
       const m = Math.min(Math.floor(s / D.path_every_s), d.path.length - 1);
       const tp = d.trail.geometry.attributes.position.array, sp = d.shadow.geometry.attributes.position.array;
       for (let i = 0; i <= m; i++) {
@@ -699,6 +712,7 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
       d.trail.geometry.setDrawRange(0, m + 2); d.trail.geometry.attributes.position.needsUpdate = true;
       d.shadow.geometry.setDrawRange(0, m + 2); d.shadow.geometry.attributes.position.needsUpdate = true;
     }
+    Ftarget = Math.max(2.5, most + 0.5, droneFar) * 1.15;
     if (follow && drones.length && s >= 0) {
       const g = drones[0].g.position, dx = g.x - controls.target.x, dz = g.z - controls.target.z;
       controls.target.x += dx; controls.target.z += dz;
@@ -728,6 +742,7 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
   new ResizeObserver(resize).observe(canvas);
 
   const ease = x => 1 - Math.pow(1 - x, 3);
+  let prevTs = null;
   function loop(ts) {
     if (playing) {
       if (last !== null) {
@@ -735,14 +750,29 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
         if (t >= total()) playing = false;
       }
       last = ts;
-      draw();
     } else last = null;
+    const dtf = prevTs === null ? 1 : Math.min(0.1, (ts - prevTs) / 1000);
+    prevTs = ts;
+    F += (Ftarget - F) * (reduced ? 1 : 1 - Math.exp(-dtf * 2.5));
+    applyScale();
+    buildGrid();
+    draw();
+    beam.scale.set(F * 0.005, alt * 2.2, F * 0.005);
+    beam.position.y = alt * 1.1;
+    tipTag.pos.set(0, alt * 2.25, 0);
+    if (autoFrame && !follow && !intro) {
+      const off = camera.position.clone().sub(controls.target);
+      const want = frameDist(), now = off.length();
+      off.multiplyScalar((now + (want - now) * Math.min(1, dtf * 2.5)) / now);
+      controls.target.multiplyScalar(1 - Math.min(1, dtf * 2.5));
+      camera.position.copy(controls.target).add(off);
+    }
     const sec = reduced ? 0 : ts / 1000;
     waterMat.uniforms.uTime.value = sec;
     for (const d of drones) { d.coneMat.uniforms.uTime.value = sec; d.footMat.uniforms.uTime.value = sec; }
     tipRings.forEach((m, i) => {
       const k = reduced ? (i + 1) / 3 : ((sec * 0.35 + i / 3) % 1);
-      m.scale.setScalar(R * (0.01 + 0.05 * k));
+      m.scale.setScalar(F * (0.02 + 0.09 * k));
       m.position.y = 0.03;
       m.material.opacity = 0.9 * (1 - k);
     });
@@ -780,8 +810,9 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
     playing = false;
     fillStrategies();
     buildWorld();
-    if (!keepView) resetView(animate);
     setTime(Math.min(arrival() + 20 * 60, total()));
+    F = Ftarget; applyScale(); buildGrid(); draw();
+    if (!keepView) resetView(animate);
   }
   function setTime(v) { t = Math.max(0, Math.min(v, total())); draw(); }
 
@@ -805,6 +836,9 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
     follow = false; $("follow").setAttribute("aria-pressed", "false");
     resetView(false);
   });
+  function setAuto(on) { autoFrame = on; $("auto").setAttribute("aria-pressed", String(on)); }
+  controls.addEventListener("start", () => { if (!controls.autoRotate) setAuto(false); });
+  $("auto").addEventListener("click", () => setAuto(!autoFrame));
   $("orbit").addEventListener("click", () => {
     controls.autoRotate = !controls.autoRotate;
     $("orbit").setAttribute("aria-pressed", String(controls.autoRotate));
@@ -813,10 +847,10 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
     follow = !follow;
     $("follow").setAttribute("aria-pressed", String(follow));
     if (follow && drones.length) {
-      intro = null;
+      intro = null; setAuto(false);
       const g = drones[0].g.position;
       controls.target.set(g.x, 0, g.z);
-      camera.position.set(g.x - R * 0.14, R * 0.26, g.z + R * 0.32);
+      camera.position.set(g.x - F * 0.3, F * 0.55, g.z + F * 0.7);
     }
     draw();
   });
