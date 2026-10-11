@@ -412,6 +412,8 @@ td small { color: var(--muted); }
       3: ["Ring, then smart ×3", "Dash straight out to the ring first, then switch to the shared map."] },
     guard_plus_smart: { c: "--s6",
       3: ["Guard + smart ×3", "One drone squares the tip spot for stopped boats; two search with the shared map."] },
+    greedy_shared_night: { c: "--s5",
+      3: ["Smart, night-aware ×3", "Shared map that knows the camera misses, so one look only makes water less likely."] },
   };
   const A = D.assumptions;
   const END_S = A.endurance_min * 60;
@@ -580,7 +582,7 @@ td small { color: var(--muted); }
         ctx.lineTo(X(here[0]), Y(here[1])); ctx.stroke();
         ctx.setLineDash([]);
         ctx.globalAlpha = 0.18; ctx.fillStyle = c;
-        ctx.beginPath(); ctx.arc(X(here[0]), Y(here[1]), Math.max(4, A.sweep_radius_km * k), 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(X(here[0]), Y(here[1]), Math.max(4, (scen().sweep_radius_km ?? A.sweep_radius_km) * k), 0, Math.PI * 2); ctx.fill();
         ctx.globalAlpha = 1;
         ctx.fillStyle = c; ctx.strokeStyle = col.panel; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.arc(X(here[0]), Y(here[1]), 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
@@ -741,7 +743,8 @@ td small { color: var(--muted); }
     }
     $("assume").innerHTML = [
       ["Drone speed", `${A.drone_speed_ms} m/s`, `about ${mph} mph, like a fixed-wing`],
-      ["Drone can spot a boat within", `${A.sweep_radius_km} km`, "a guess; the biggest unknown"],
+      ["Drone can spot a boat within", `${scen().sweep_radius_km ?? A.sweep_radius_km} km`,
+       scen().night ? `night thermal camera; spots a boat on ${Math.round(scen().p_detect * 100)}% of passes (guess)` : "a guess; the biggest unknown"],
       ["Search time on station", `${A.endurance_min} min`, "after reaching the tip location"],
       ...boatRows,
       ["Satellite position error", `±${A.cue_error_m} m`, "one standard deviation"],

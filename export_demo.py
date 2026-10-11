@@ -18,7 +18,7 @@ from cuesearch.evaluate import team_time_to_find, wilson
 from cuesearch.model import BoatPrior, Drone
 from cuesearch.ais import TrackPrior, sample_boats
 from real_tracks_sim import load_days
-from search_sim import STRATEGIES, boat_rng, plan
+from search_sim import NIGHT, STRATEGIES, boat_rng, detect_rng, plan
 
 # (id, label, true boat speeds, what the searchers believe)
 SCENARIOS = [
@@ -44,25 +44,35 @@ REAL_STRAIGHT_KN = (0.0, 12.0)       # the straight-line guess used for real fis
 REAL_TRACK_EVERY_S = 30              # keep one boat position per 30 s
 
 
-def run_modes(drone, shown, curve_boats, guess_for, label):
-    """Plan every team and score it. guess_for(age_min) -> what the searchers believe."""
+def run_modes(drone, shown, curve_boats, guess_for, label, p_detect=1.0, extra=None):
+    """Plan every team and score it. guess_for(age_min) -> what the searchers believe.
+
+    p_detect < 1: night camera that misses some passes (every strategy gets the same luck).
+    extra: {mode id: strategies to add to that mode}, e.g. the night-aware search.
+    """
     keep = int(PATH_EVERY_S / 2.0)   # paths are sampled every 2 s
     cache = {}   # the same team shows up in more than one mode; plan it once
 
     def team_for(name, age, n):
         key = (name, age, n)
         if key not in cache:
-            cache[key] = plan(name, age * 60, drone, guess_for(age), seed=SEED + 1000, n_drones=n)
+            cache[key] = plan(name, age * 60, drone, guess_for(age), seed=SEED + 1000, n_drones=n,
+                              p_detect=p_detect)
         return cache[key]
+
+    def find(team, boats, age):
+        return team_time_to_find(team, boats, drone.sweep_radius_m, p_detect=p_detect,
+                                 rng=detect_rng(SEED, age))
 
     modes = []
     for mid, mlabel, n, names in MODES:
+        names = tuple(names) + tuple((extra or {}).get(mid, ()))
         playback = []
         for age, boats in zip(PLAYBACK_AGES_MIN, shown):
             runs = {}
             for name in names:
                 team = team_for(name, age, n)
-                found = team_time_to_find(team, boats, drone.sweep_radius_m)
+                found = find(team, boats, age)
                 runs[name] = {
                     "paths": [np.round(p.xy[::keep] / 1000, 3).tolist() for p in team],   # km
                     "found_s": [None if np.isinf(t) else float(t) for t in found],
@@ -71,8 +81,7 @@ def run_modes(drone, shown, curve_boats, guess_for, label):
         curve = {name: [] for name in names}
         for age, boats in zip(CURVE_AGES_MIN, curve_boats):
             for name in names:
-                k = int(np.isfinite(team_time_to_find(team_for(name, age, n), boats,
-                                                      drone.sweep_radius_m)).sum())
+                k = int(np.isfinite(find(team_for(name, age, n), boats, age)).sum())
                 lo, hi = wilson(k, len(boats))
                 curve[name].append({"age_min": age, "found": k, "trials": len(boats),
                                     "p": k / len(boats), "lo": lo, "hi": hi})
@@ -99,6 +108,23 @@ def main():
                        "velocity_kms": np.round(b.velocity / 1000, 6).tolist()} for b in shown],
             "modes": run_modes(drone, shown, curve_boats, lambda age, a=assumed: a, slabel),
         })
+
+    # Night: same boats as "Searchers guess right", but a thermal camera that sees less
+    # far and misses some passes. Adds the night-aware smart search to the 3-drone team.
+    truth = BoatPrior(SCENARIOS[0][2])
+    rng = np.random.default_rng(SEED)
+    shown_n = [truth.sample(BOATS_SHOWN, rng) for _ in PLAYBACK_AGES_MIN]
+    curve_n = [truth.sample(CURVE_TRIALS, rng) for _ in CURVE_AGES_MIN]
+    night_drone = Drone(drone.speed_ms, NIGHT["sweep_radius"], drone.endurance_s)
+    scenarios.append({
+        "id": "night", "label": "Night, thermal camera", "night": True,
+        "truth_kn": list(SCENARIOS[0][2]), "assumed_kn": list(SCENARIOS[0][3]),
+        "sweep_radius_km": NIGHT["sweep_radius"] / 1000, "p_detect": NIGHT["p_detect"],
+        "boats": [{"offset_km": np.round(b.offset / 1000, 4).tolist(),
+                   "velocity_kms": np.round(b.velocity / 1000, 6).tolist()} for b in shown_n],
+        "modes": run_modes(night_drone, shown_n, curve_n, lambda age: truth, "Night",
+                           p_detect=NIGHT["p_detect"], extra={"3": ("greedy_shared_night",)}),
+    })
 
     # Real boats: NOAA AIS fishing-vessel paths (see cuesearch/ais.py). Both real
     # scenarios hunt the SAME real boats; only the searchers' guess differs.

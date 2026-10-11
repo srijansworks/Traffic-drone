@@ -131,6 +131,7 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
 .viewbtns { position: absolute; right: 14px; top: 14px; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
 .viewbtns button { font: 500 12px/1 var(--mono); padding: 9px 11px; border-radius: 6px; border: 1px solid var(--rule); background: var(--hud); color: var(--ink); cursor: pointer; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
 .viewbtns button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.stage.night .tag.km, .stage.night .corner { color: #9cc4d1; }
 .corner { position: absolute; right: 14px; bottom: 12px; font: 500 11px/1.4 var(--mono); color: var(--foam); opacity: .85; text-align: right; pointer-events: none; text-shadow: 0 1px 2px rgba(0, 0, 0, .5); }
 
 .timeline { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: center; }
@@ -152,7 +153,7 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
   <header>
     <div class="eyebrow">Drone search · satellite tip to boat found · 3D replay</div>
     <h1>Watch the drones hunt for a boat that has already moved</h1>
-    <p class="lede">The gold beacon is where the satellite saw the boat. Every white boat is a place it could really be by now; a boat lights up in the drones' colour the moment a camera cone passes over it. Drag to orbit, scroll or pinch to zoom.</p>
+    <p class="lede">The gold beacon is where the satellite saw the boat. Every white boat is a place it could really be by now (at night they show as warm heat signatures); a boat lights up in the drones' colour the moment a camera cone passes over it. Drag to orbit, scroll or pinch to zoom.</p>
   </header>
 
   <div class="controls" aria-label="Scenario controls">
@@ -197,7 +198,7 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
   <div class="key">
     <span><i style="width:16px;height:7px;border-radius:2px 6px 6px 2px;background:var(--boat);border:1px solid var(--muted)"></i>Possible boat, not seen yet</span>
     <span><i style="width:16px;height:7px;border-radius:2px 6px 6px 2px;background:var(--s3)"></i>Spotted (in the search's colour)</span>
-    <span><i style="width:14px;height:12px;clip-path:polygon(50% 0,100% 100%,0 100%);background:color-mix(in srgb,var(--s3) 45%,transparent)"></i>Camera cone: sees boats within 1 km</span>
+    <span><i style="width:14px;height:12px;clip-path:polygon(50% 0,100% 100%,0 100%);background:color-mix(in srgb,var(--s3) 45%,transparent)"></i><span id="conekey">Camera cone: sees boats within 1 km</span></span>
     <span><i style="width:10px;height:10px;border-radius:50%;border:2px solid var(--tip)"></i>Satellite tip</span>
     <span id="ringkey"><i style="width:18px;height:0;border-top:2px dashed var(--ink-2)"></i>How far a boat could have gone</span>
   </div>
@@ -223,11 +224,19 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
     greedy_shared: { c: "--s3", 3: "Smart, shared map ×3" },
     ring_then_smart: { c: "--s5", 3: "Ring, then smart ×3" },
     guard_plus_smart: { c: "--s6", 3: "Guard + smart ×3" },
+    greedy_shared_night: { c: "--s5", 3: "Smart, night-aware ×3" },
   };
   const A = D.assumptions, END_S = A.endurance_min * 60;
   const $ = id => document.getElementById(id);
   const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
   const col = n => new THREE.Color(css(n));
+  // Night scenario: the scene goes dark whatever the page theme, and boats show as
+  // warm heat signatures, the way a thermal camera sees them.
+  const NIGHT_PAL = { "--sky-top": "#010307", "--sky-horizon": "#0a1f2b", "--water": "#0b2b38",
+    "--water-deep": "#030d14", "--foam": "#6f9fb0", "--grid": "#1b3f4d", "--boat": "#ff9b4a",
+    "--cabin": "#ffcf8a", "--tip": "#f0a92c" };
+  const pal = n => (scen().night && NIGHT_PAL[n]) ? new THREE.Color(NIGHT_PAL[n]) : col(n);
+  const camR = () => scen().sweep_radius_km ?? A.sweep_radius_km;
   const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   let scenIdx = Math.max(0, D.scenarios.findIndex(s => s.id === "real_learned"));
@@ -276,9 +285,16 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
   // ===== sky dome
   const skyMat = new THREE.ShaderMaterial({
     side: THREE.BackSide, depthWrite: false, fog: false,
-    uniforms: { top: { value: new THREE.Color() }, horizon: { value: new THREE.Color() } },
+    uniforms: { top: { value: new THREE.Color() }, horizon: { value: new THREE.Color() }, uStars: { value: 0 } },
     vertexShader: "varying vec3 vP; void main(){ vP = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }",
-    fragmentShader: "uniform vec3 top; uniform vec3 horizon; varying vec3 vP; void main(){ float h = clamp(vP.y*1.6, 0.0, 1.0); gl_FragColor = vec4(mix(horizon, top, pow(h, 0.7)), 1.0); }",
+    fragmentShader: `uniform vec3 top; uniform vec3 horizon; uniform float uStars; varying vec3 vP;
+      float hash(vec3 p){ return fract(sin(dot(p, vec3(12.9898, 78.233, 37.719))) * 43758.5453); }
+      void main(){
+        float h = clamp(vP.y*1.6, 0.0, 1.0);
+        vec3 c = mix(horizon, top, pow(h, 0.7));
+        float star = step(0.9965, hash(floor(vP * 260.0))) * smoothstep(0.08, 0.5, vP.y) * uStars;
+        gl_FragColor = vec4(c + vec3(star * 0.85), 1.0);
+      }`,
   });
   const sky = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 16), skyMat);
   scene.add(sky);
@@ -502,7 +518,10 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
     beam.position.y = alt * 1.1;
     tipTag.pos.set(0, alt * 2.25, 0);
 
-    $("corner").textContent = `rings every ${step} km · boats, drones and height not to scale`;
+    $("corner").textContent = scen().night
+      ? `night · thermal camera sees ${camR() * 1000} m, spots ${Math.round(scen().p_detect * 100)}% of passes · rings every ${step} km`
+      : `rings every ${step} km · boats, drones and height not to scale`;
+    $("conekey").textContent = `Camera cone: sees boats within ${camR() >= 1 ? camR() + " km" : camR() * 1000 + " m"}${scen().night ? " (thermal, misses some)" : ""}`;
     $("ringkey").hidden = isReal();
 
     droneGroup.clear();
@@ -519,13 +538,13 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
         uniforms: { c: { value: c }, uTime: { value: 0 }, uH: { value: alt } },
         vertexShader: coneVS, fragmentShader: coneFS,
       });
-      const cone = new THREE.Mesh(new THREE.ConeGeometry(A.sweep_radius_km, alt, 48, 1, true), coneMat);
+      const cone = new THREE.Mesh(new THREE.ConeGeometry(camR(), alt, 48, 1, true), coneMat);
       const footMat = new THREE.ShaderMaterial({
         transparent: true, depthWrite: false, fog: false,
         uniforms: { c: { value: c }, uTime: { value: 0 } },
         vertexShader: footVS, fragmentShader: footFS,
       });
-      const foot = new THREE.Mesh(new THREE.PlaneGeometry(A.sweep_radius_km * 2, A.sweep_radius_km * 2), footMat);
+      const foot = new THREE.Mesh(new THREE.PlaneGeometry(camR() * 2, camR() * 2), footMat);
       foot.rotation.x = -Math.PI / 2;
       const trailGeo = new THREE.BufferGeometry();
       trailGeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array((path.length + 2) * 3), 3));
@@ -561,24 +580,27 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
   }
 
   function applyTheme() {
-    const haze = col("--sky-horizon");
-    skyMat.uniforms.top.value = col("--sky-top");
+    const haze = pal("--sky-horizon");
+    skyMat.uniforms.top.value = pal("--sky-top");
     skyMat.uniforms.horizon.value = haze;
-    waterMat.uniforms.uDeep.value = col("--water-deep");
-    waterMat.uniforms.uWater.value = col("--water");
-    waterMat.uniforms.uFoam.value = col("--foam");
+    skyMat.uniforms.uStars.value = scen().night ? 1 : 0;
+    waterMat.uniforms.uDeep.value = pal("--water-deep");
+    waterMat.uniforms.uWater.value = pal("--water");
+    waterMat.uniforms.uFoam.value = pal("--foam");
     waterMat.uniforms.uHaze.value = haze;
     waterMat.uniforms.uFogNear.value = R * 1.4;
     waterMat.uniforms.uFogFar.value = R * 5.5;
     scene.fog.color = haze; scene.fog.near = R * 1.6; scene.fog.far = R * 7;
     scene.background = haze;
-    gridMat.color = col("--grid");
-    rangeMat.color = col("--foam");
-    beamMat.uniforms.c.value = col("--tip");
-    tipRings.forEach(r => r.material.color = col("--tip"));
-    cabinMesh.material.color = col("--cabin");
+    gridMat.color = pal("--grid");
+    rangeMat.color = pal("--foam");
+    beamMat.uniforms.c.value = pal("--tip");
+    tipRings.forEach(r => r.material.color = pal("--tip"));
+    cabinMesh.material.color = pal("--cabin");
+    hullMesh.material.emissive = scen().night ? new THREE.Color("#3a1600") : new THREE.Color(0);
     beaconMat.color = col(META[stratKey].c);
     ripples.forEach(r => r.material.color = col(META[stratKey].c));
+    $("stage").classList.toggle("night", !!scen().night);
   }
 
   // ===== per-time update (boats, drones, HUD)
@@ -586,8 +608,8 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
   const cBoat = new THREE.Color(), cSeen = new THREE.Color(), cFoam = new THREE.Color(), cWater = new THREE.Color();
   function draw() {
     const tt = t, s = tt - arrival(), r = run(), n = nB();
-    cBoat.copy(col("--boat")); cSeen.copy(col(META[stratKey].c));
-    cFoam.copy(col("--foam")); cWater.copy(col("--water"));
+    cBoat.copy(pal("--boat")); cSeen.copy(col(META[stratKey].c));
+    cFoam.copy(pal("--foam")); cWater.copy(pal("--water"));
     let found = 0, nRipple = 0;
     const wp = wakeGeo.attributes.position.array, wc = wakeGeo.attributes.color.array;
     const bp = beaconGeo.attributes.position.array;
