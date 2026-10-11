@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""How close are the drones to the theoretical best? Compare against Brown's FAB.
+"""Compare the drones with Brown's FAB, the classic optimal plan for a moving target.
 
-FAB (cuesearch/fab.py) is the classic optimal plan for a moving target, but it
-spreads search effort anywhere at once, which real drones can't do. So read its
-number as a ceiling: "with this much sweeping, the best possible plan finds X%".
-The smart search's gap to it is the room left for a better flyable plan.
+FAB (cuesearch/fab.py) spreads search effort anywhere at once, which real drones
+can't do, but it assumes random-search detection, which is worse than this model's
+perfect 1 km camera. So it's not a strict ceiling; see the note in cuesearch/fab.py.
 
     python fab_sim.py --drones 3 --cue-ages 10 30                  # straight-line boats
     python fab_sim.py --drones 3 --drone x10 --real --cue-ages 10 30 60
@@ -55,7 +54,7 @@ def main():
     else:
         truth = BoatPrior(tuple(args.boat_speed_kn))
 
-    print(f"{'cue age':>8} {'spiral':>8} {'smart':>8} {'FAB ceiling':>12}")
+    print(f"{'cue age':>8} {'spiral':>8} {'smart':>8} {'FAB':>12}")
     for age in args.cue_ages:
         horizon = age * 60 + drone.endurance_s
         if args.real:

@@ -565,3 +565,33 @@ I guessed smart 40%, spiral 34% at 10 min. Actual 97.8% and 96.2%. Way too low.
 
 "1. 60% 2. 41% 3. 90% 4. 70%"
 (19: FAB 60%. 20: 41%. 21: 90%. 22: 70%.)
+
+### Actual (2026-10-11)
+
+| # | Test | My guess | Actual |
+|---|---|---|---|
+| 19 | FAB, 3 F10s, straight-line boats, 10 min | 60% | 44.9% (smart 51.8%, spiral 1.7%) |
+| 20 | Camera sees only 500 m (smart shared map) | 41% | 28.1% (was 51.8% at 1 km) |
+| 21 | Jan 4 real fishing boats, 3 X10s, learned guess | 90% | 86.5% (spiral 73.9%) |
+| 22 | Real fast boats, 3 F10s, learned guess | 70% | 65.3% (straight-line guess 54.9%, spiral 49.5%) |
+
+**Correction note on 19:** the first FAB run used 4,000 guesses and gave 27.4%. That was
+a setup mistake: with so few guesses spread over a big area, FAB put all its effort
+exactly on its own guesses (91% found on those) and missed the fresh test boats. With
+300,000 guesses it settles at 44.9% (100k: 44.1%), the same on its own guesses and on
+fresh boats. 44.9% is the real number; the default is now 300,000.
+
+### What I learned
+
+- My smart search (51.8%) beat Brown's FAB (44.9%), the classic "optimal" plan. That's
+  not because it's smarter than optimal: FAB assumes a camera that only spots a boat
+  ~63% of the time when it passes over (random search), while my model's camera is
+  perfect inside 1 km. If real cameras are unreliable, FAB-style thinking matters more.
+  Camera reliability is a question for the Skydio engineer.
+- Camera range matters a lot: halving it (1 km → 500 m) cut finds from 51.8% to 28.1%.
+  That's the single most important number to get from a real operator.
+- The learned guess holds on a different day: on Jan 4 it still beat the spiral by 12.6
+  points (Jan 1: 12.1). So it isn't a one-day fluke.
+- Learning from real tracks also helps fast boats: 65.3% vs 54.9% with the straight-line
+  guess, and the spiral's 49.5%. That's a 16-point lead for the smart search.
+- My guesses were close on the real-boat tests and too high on the model ones.

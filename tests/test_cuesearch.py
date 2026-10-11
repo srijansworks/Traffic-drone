@@ -271,7 +271,7 @@ def test_track_prior_from_fake_ais():
 
 
 def test_fab():
-    print("Brown's FAB (theoretical ceiling)")
+    print("Brown's FAB (classic optimal search)")
     from cuesearch.fab import fab_plan, water_fill
     g = np.array([4.0, 2.0, 1.0, 0.0, 0.5])
     e = water_fill(g, 3.0, 1.0)

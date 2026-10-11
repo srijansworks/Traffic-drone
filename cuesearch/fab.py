@@ -10,10 +10,17 @@ effort to put in every cell at every step so the chance of finding the boat is a
 high as possible. Detection is "random search" (Koopman's exponential law): putting
 effort e into a cell of area A finds a boat that's in it with chance 1 - exp(-e/A).
 
-What makes it a CEILING, not a real plan: effort can be split across any cells,
-anywhere, every step. Real drones can't teleport or be in ten places at once; they
-have to fly a path. So FAB answers "how good could a search possibly be with this
-much sweeping?", and the gap between it and a flyable search is how much room is left.
+Not a flyable plan: effort can be split across any cells, anywhere, every step.
+Real drones can't teleport or be in ten places at once; they have to fly a path.
+
+Not a true ceiling either, for THIS project's sensor. FAB is optimal under random-
+search detection (one pass over a boat finds it only ~63% of the time). The drones
+here have a perfect 1 km camera, which beats that law, so a flyable path can score
+higher than FAB. Read FAB as "what the classic optimal-search theory gives".
+
+Needs MANY particles (default 300,000). With a few thousand spread over a big area
+it piles effort exactly where its own guesses sit and misses the gaps between them:
+experiment 19 first scored 91% on its own guesses but 27% on fresh boats.
 
 Here the boat's motion is the same particle cloud the smart search uses: each
 particle is one possible path. Brown's forward-and-backward pass then becomes:
@@ -73,7 +80,7 @@ def water_fill(g, budget, area):
 
 
 def fab_plan(cue_age_s, drone, prior, n_drones=1, cell_m=500.0, step_s=60.0,
-             n_particles=4000, iters=25, seed=0):
+             n_particles=300_000, iters=25, seed=0):
     """FAB plan for the search window [cue_age_s, cue_age_s + endurance]."""
     rng = np.random.default_rng(seed)
     particles = prior.sample(n_particles, rng)
