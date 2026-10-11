@@ -12,6 +12,8 @@ random boats at those paths and count how many get found.
     python search_sim.py --trials 300 --cue-ages 0 20 # quick look
     python search_sim.py --drone-speed 15             # a quadcopter instead
     python search_sim.py --drone x10                  # Skydio X10-like quadcopter (see DRONES)
+    python search_sim.py --drones 3 --night --strategies expanding_square greedy_shared greedy_shared_night
+        # night: thermal camera sees 500 m and spots a boat on 70% of passes (guesses)
     python search_sim.py --assumed-speed-kn 10 30 --boat-speed-kn 0 40
         # the searcher THINKS boats do 10-30 kn, but real ones do 0-40.
         # This is the honesty test: the smart search only knows what you told it.
@@ -41,10 +43,11 @@ from cuesearch.team import (greedy_independent, greedy_shared, guard_plus_smart,
 
 STRATEGIES = ("expanding_square", "ring_search", "probability_greedy")
 TEAM_STRATEGIES = ("expanding_square", "ring_search", "greedy_independent", "greedy_shared")
-ALL_STRATEGIES = STRATEGIES + ("greedy_independent", "greedy_shared", "ring_then_smart", "guard_plus_smart")
+ALL_STRATEGIES = STRATEGIES + ("greedy_independent", "greedy_shared", "ring_then_smart", "guard_plus_smart",
+                                "greedy_shared_night")
 COLORS = {"expanding_square": "#888888", "ring_search": "#e67e22", "probability_greedy": "#1f6fd1",
           "greedy_independent": "#8e7cc3", "greedy_shared": "#1f6fd1",
-          "ring_then_smart": "#16a085", "guard_plus_smart": "#c0392b"}
+          "ring_then_smart": "#16a085", "guard_plus_smart": "#c0392b", "greedy_shared_night": "#0b3d91"}
 
 
 # Rough stand-ins for real drones. Speeds and search times are guesses from public
@@ -62,8 +65,12 @@ def strategies(n_drones):
     return STRATEGIES if n_drones == 1 else TEAM_STRATEGIES
 
 
-def plan(name, cue_age_s, drone, assumed, seed, n_drones=1):
-    """Every strategy returns a list of paths, one per drone."""
+def plan(name, cue_age_s, drone, assumed, seed, n_drones=1, p_detect=1.0):
+    """Every strategy returns a list of paths, one per drone.
+
+    p_detect only matters for greedy_shared_night: the shared-map search told that
+    its camera misses some passes, so it doesn't cross water off after one look.
+    """
     if name == "expanding_square":
         return square_team(cue_age_s, drone, n_drones)
     if name == "ring_search":
@@ -76,6 +83,8 @@ def plan(name, cue_age_s, drone, assumed, seed, n_drones=1):
         return ring_then_smart(cue_age_s, drone, assumed, n_drones, seed=seed)
     if name == "guard_plus_smart":
         return guard_plus_smart(cue_age_s, drone, assumed, n_drones, seed=seed)
+    if name == "greedy_shared_night":
+        return greedy_shared(cue_age_s, drone, assumed, n_drones, seed=seed, p_detect=p_detect)
     return [probability_greedy(cue_age_s, drone, assumed, seed=seed)]
 
 
@@ -92,6 +101,13 @@ def boat_rng(seed, age_min):
 
 
 BOAT_TAG = 0xB0A7
+DETECT_TAG = 0xD7EC
+NIGHT = dict(sweep_radius=500.0, p_detect=0.7)
+
+
+def detect_rng(seed, age_min):
+    """Random numbers for whether a night camera spots a boat on each pass."""
+    return np.random.default_rng([DETECT_TAG, seed, int(round(age_min * 1000))])
 
 
 def main():
@@ -109,6 +125,11 @@ def main():
                     help="what the searchers believe (default: same as truth, i.e. NO mismatch -- "
                          "set this to test what happens when the searcher is wrong)")
     ap.add_argument("--cue-error", type=float, default=100.0, help="m, satellite position error")
+    ap.add_argument("--p-detect", type=float, default=1.0,
+                    help="chance the camera spots a boat on each pass over it (1 = perfect)")
+    ap.add_argument("--night", action="store_true",
+                    help=f"night thermal camera: --sweep-radius {NIGHT['sweep_radius']:.0f} "
+                         f"--p-detect {NIGHT['p_detect']} (guesses until a real operator answers)")
     ap.add_argument("--drones", type=int, default=1, help="drones per strategy (same for all)")
     ap.add_argument("--strategies", nargs="+", choices=ALL_STRATEGIES, default=None,
                     help="which strategies to run (default depends on --drones)")
@@ -118,6 +139,9 @@ def main():
     if args.drone:
         args.drone_speed = DRONES[args.drone]["speed"]
         args.endurance_min = DRONES[args.drone]["endurance_min"]
+    if args.night:
+        args.sweep_radius = NIGHT["sweep_radius"]
+        args.p_detect = NIGHT["p_detect"]
 
     drone = Drone(args.drone_speed, args.sweep_radius, args.endurance_min * 60)
     truth = BoatPrior(tuple(args.boat_speed_kn), args.cue_error)
@@ -133,8 +157,11 @@ def main():
     for age_min in args.cue_ages:
         boats = truth.sample(args.trials, boat_rng(args.seed, age_min))
         for name in names:
-            team = plan(name, age_min * 60, drone, assumed, seed=args.seed + 1000, n_drones=args.drones)
-            t = team_time_to_find(team, boats, drone.sweep_radius_m)
+            team = plan(name, age_min * 60, drone, assumed, seed=args.seed + 1000, n_drones=args.drones,
+                        p_detect=args.p_detect)
+            # every strategy gets the same luck with its camera (same random stream)
+            t = team_time_to_find(team, boats, drone.sweep_radius_m, p_detect=args.p_detect,
+                                  rng=detect_rng(args.seed, age_min))
             k = int(np.isfinite(t).sum())
             lo, hi = wilson(k, args.trials)
             median = np.median(t)

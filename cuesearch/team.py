@@ -65,7 +65,7 @@ def greedy_independent(cue_age_s, drone, prior, n_drones, dt=2.0, seed=0, **kw):
 
 def greedy_shared(cue_age_s, drone, prior, n_drones, dt=2.0, n_particles=2000,
                   n_headings=16, replan_s=30.0, lookahead_s=120.0,
-                  lookahead_dt=10.0, seed=0, dash_to_ring=False, fixed_paths=()):
+                  lookahead_dt=10.0, seed=0, dash_to_ring=False, fixed_paths=(), p_detect=1.0):
     """Smart search with one shared map. With n_drones=1 (and no options) this
     flies exactly the same path as v1 probability_greedy (a test checks that).
 
@@ -74,10 +74,16 @@ def greedy_shared(cue_age_s, drone, prior, n_drones, dt=2.0, n_particles=2000,
                   (average assumed speed x time), then joins the smart search.
     fixed_paths:  pre-planned paths of other drones (e.g. a guard). They don't
                   make decisions, but whatever they sweep is crossed off the map.
+    p_detect:     what the planner believes about its camera (night: < 1). Each pass
+                  over a guess then only lowers its weight to (1 - p_detect) instead
+                  of crossing it off, so the planner is willing to look again.
     """
     rng = np.random.default_rng(seed)
     particles = prior.sample(n_particles, rng)
     alive = np.ones(n_particles, dtype=bool)
+    weight = np.ones(n_particles)                  # only used when p_detect < 1
+    inside_before = np.zeros(n_particles, dtype=bool)
+    inside_now = np.zeros(n_particles, dtype=bool)
     r2 = drone.sweep_radius_m ** 2
     step = drone.speed_ms * dt
 
@@ -92,7 +98,17 @@ def greedy_shared(cue_age_s, drone, prior, n_drones, dt=2.0, n_particles=2000,
 
     def sweep(pos, t):
         d2 = ((particles.at(t) - pos) ** 2).sum(axis=1)
-        alive[d2 <= r2] = False
+        if p_detect >= 1.0:
+            alive[d2 <= r2] = False
+            return
+        inside = d2 <= r2
+        weight[inside & ~inside_before & ~inside_now] *= 1.0 - p_detect   # a new pass
+        inside_now[inside] = True
+        alive[:] = weight > 1e-3
+
+    def end_step():
+        inside_before[:] = inside_now
+        inside_now[:] = False
 
     def choose_heading(pos, t, claimed):
         """Best heading for one drone, ignoring guesses teammates already claimed.
@@ -106,7 +122,7 @@ def greedy_shared(cue_age_s, drone, prior, n_drones, dt=2.0, n_particles=2000,
         drone_future = pos + dirs[:, None, :] * (drone.speed_ms * look_t)[None, :, None]  # (H, L, 2)
         d2 = ((drone_future[:, None, :, :] - future[None, :, :, :]) ** 2).sum(axis=-1)    # (H, A, L)
         covered = (d2 <= r2).any(axis=2)                                # (H, A)
-        score = covered.sum(axis=1)
+        score = covered.sum(axis=1) if p_detect >= 1.0 else covered @ weight[idx]
         if score.max() > 0:
             best = int(np.argmax(score))
             return dirs[best], idx[covered[best]]
@@ -126,6 +142,7 @@ def greedy_shared(cue_age_s, drone, prior, n_drones, dt=2.0, n_particles=2000,
         sweep(pos[j], times[0])
     for fp in fixed_paths:
         sweep(fp.xy[0], times[0])
+    end_step()
     if dash_to_ring:
         spread = 2 * np.pi * np.arange(n_drones) / n_drones
         headings = np.stack([np.cos(spread), np.sin(spread)], axis=1)
@@ -152,6 +169,7 @@ def greedy_shared(cue_age_s, drone, prior, n_drones, dt=2.0, n_particles=2000,
                 sweep(pos[j], times[k])
             for fp in fixed_paths:
                 sweep(fp.xy[k], times[k])
+            end_step()
             was = dashing.copy()
             dashing = np.array([was[j] and still_dashing(pos[j], times[k]) for j in range(n_drones)])
             if (was & ~dashing).any():

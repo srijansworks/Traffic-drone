@@ -328,6 +328,29 @@ def test_intercept():
     check("works the same for recorded tracks", abs(t2[0] - 1500) <= 1, str(t2))
 
 
+def test_night_camera():
+    print("night camera that sometimes misses")
+    boats = BoatPrior().sample(400, np.random.default_rng(4))
+    path = probability_greedy(300, Drone(), BoatPrior(), seed=1)
+    day = time_to_find(path, boats, 1000.0)
+    same = time_to_find(path, boats, 1000.0, p_detect=1.0, rng=np.random.default_rng(0))
+    check("p_detect = 1 is exactly the daytime camera", np.array_equal(day, same))
+    never = time_to_find(path, boats, 1000.0, p_detect=0.0, rng=np.random.default_rng(0))
+    check("p_detect = 0 finds nothing", np.isinf(never).all())
+    half = time_to_find(path, boats, 1000.0, p_detect=0.5, rng=np.random.default_rng(0))
+    check("a missing camera never finds a boat the perfect one didn't, or sooner",
+          np.all(half[np.isfinite(half)] >= day[np.isfinite(half)]) and np.isfinite(day[np.isfinite(half)]).all())
+    still = one_boat(0, 0, 0, 0)
+    hover = type(path)(times=np.arange(0, 100.0), xy=np.zeros((100, 2)))
+    got = np.mean([np.isfinite(time_to_find(hover, still, 100.0, p_detect=0.5, rng=np.random.default_rng(k)))[0]
+                   for k in range(400)])
+    check("hovering over one boat is ONE pass: found ~50% of the time", 0.43 < got < 0.57, f"{got:.2f}")
+    day_plan = greedy_shared(300, Drone(), BoatPrior(), 3, seed=1)
+    night_plan = greedy_shared(300, Drone(), BoatPrior(), 3, seed=1, p_detect=0.7)
+    check("a planner told its camera misses flies a different path",
+          not all(np.allclose(a.xy, b.xy) for a, b in zip(day_plan, night_plan)))
+
+
 def test_wilson():
     print("confidence interval")
     lo, hi = wilson(0, 10)
@@ -348,6 +371,7 @@ if __name__ == "__main__":
     test_team()
     test_combos()
     test_track_boats_match_straight_lines()
+    test_night_camera()
     test_intercept()
     test_fab()
     test_track_prior_from_fake_ais()
