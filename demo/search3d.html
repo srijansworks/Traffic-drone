@@ -1,0 +1,517 @@
+<title>Stale Tip Search 3D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&family=JetBrains+Mono:wght@400;500&family=Source+Sans+3:wght@400;600&display=swap">
+<style>
+:root {
+  --bg: #f3f6f6;
+  --panel: #ffffff;
+  --sea: #c9dde2;
+  --sea-deep: #9fbfc8;
+  --ink: #13232b;
+  --ink-2: #4b5b63;
+  --muted: #6f7f86;
+  --rule: #d3dddf;
+  --grid: #86a6af;
+  --boat: #50626a;
+  --wake: #ffffff;
+  --s1: #2a78d6;
+  --s2: #eb6834;
+  --s3: #1baf7a;
+  --s4: #eda100;
+  --s5: #e34948;
+  --s6: #4a3aa7;
+  --focus: #2a78d6;
+  --hud: rgba(255, 255, 255, .86);
+  --display: "Barlow Condensed", "Arial Narrow", "Helvetica Neue", sans-serif;
+  --body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0f1b22;
+    --panel: #14232c;
+    --sea: #0d2430;
+    --sea-deep: #081820;
+    --ink: #e3ecee;
+    --ink-2: #a8b8be;
+    --muted: #84969d;
+    --rule: #24363f;
+    --grid: #2b4c5a;
+    --boat: #9fb3ba;
+    --wake: #cfe3ea;
+    --s1: #3987e5;
+    --s2: #d95926;
+    --s3: #199e70;
+    --s4: #c98500;
+    --s5: #e66767;
+    --s6: #9085e9;
+    --focus: #6aa8ef;
+    --hud: rgba(15, 27, 34, .84);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0f1b22;
+  --panel: #14232c;
+  --sea: #0d2430;
+  --sea-deep: #081820;
+  --ink: #e3ecee;
+  --ink-2: #a8b8be;
+  --muted: #84969d;
+  --rule: #24363f;
+  --grid: #2b4c5a;
+  --boat: #9fb3ba;
+  --wake: #cfe3ea;
+  --s1: #3987e5;
+  --s2: #d95926;
+  --s3: #199e70;
+  --s4: #c98500;
+  --s5: #e66767;
+  --s6: #9085e9;
+  --focus: #6aa8ef;
+  --hud: rgba(15, 27, 34, .84);
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 16px/1.5 var(--body); }
+.wrap { max-width: 1240px; margin: 0 auto; padding-inline: 20px; padding-block: 24px 48px; display: grid; gap: 18px; }
+header { display: grid; gap: 6px; max-width: 780px; }
+.eyebrow { font: 500 12px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { font: 600 clamp(26px, 4vw, 40px)/1.08 var(--display); margin: 0; text-wrap: balance; }
+.lede { margin: 0; color: var(--ink-2); max-width: 68ch; }
+
+.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; padding-block: 12px; border-block: 1px solid var(--rule); }
+.group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.label { font: 500 11px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; }
+.seg button { font: 500 13px/1 var(--mono); padding: 9px 11px; border: 0; background: var(--panel); color: var(--ink-2); cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--rule); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+select { font: 500 13px/1 var(--mono); padding: 8px 10px; border-radius: 6px; border: 1px solid var(--rule); background: var(--panel); color: var(--ink); max-width: 100%; }
+.btn { font: 600 15px/1 var(--body); padding: 10px 16px; border-radius: 6px; border: 1px solid var(--ink); background: var(--ink); color: var(--bg); cursor: pointer; }
+.btn.ghost { background: transparent; color: var(--ink); border-color: var(--rule); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+.stage { position: relative; border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; background: var(--sea); }
+#scene { display: block; width: 100%; height: min(68vh, 640px); min-height: 340px; touch-action: none; }
+.hud { position: absolute; left: 12px; top: 12px; display: grid; gap: 8px; pointer-events: none; max-width: calc(100% - 24px); }
+.chip { background: var(--hud); border: 1px solid var(--rule); border-radius: 6px; padding: 8px 11px; backdrop-filter: blur(4px); }
+.clock { font: 500 22px/1 var(--mono); font-variant-numeric: tabular-nums; }
+.clock small { font-size: 11px; color: var(--muted); margin-left: 6px; }
+.phase { font: 600 13px/1.2 var(--body); display: flex; align-items: center; gap: 8px; }
+.phase i { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex: none; }
+.phase[data-phase="search"] i { background: var(--s3); }
+.phase[data-phase="transit"] i { background: var(--s2); }
+.found { display: flex; align-items: baseline; gap: 8px; font-variant-numeric: tabular-nums; }
+.found b { font: 600 30px/1 var(--display); }
+.found span { font-size: 13px; color: var(--ink-2); }
+.corner { position: absolute; right: 12px; bottom: 12px; font: 500 11px/1.4 var(--mono); color: var(--ink-2); text-align: right; pointer-events: none; }
+.viewbtns { position: absolute; right: 12px; top: 12px; display: flex; gap: 6px; }
+.viewbtns button { font: 500 12px/1 var(--mono); padding: 8px 10px; border-radius: 6px; border: 1px solid var(--rule); background: var(--hud); color: var(--ink); cursor: pointer; }
+.viewbtns button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+
+.timeline { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: center; }
+input[type="range"] { width: 100%; accent-color: var(--ink); }
+.key { display: flex; flex-wrap: wrap; gap: 8px 22px; font-size: 14px; color: var(--ink-2); }
+.key span { display: inline-flex; align-items: center; gap: 8px; }
+.key i { display: inline-block; flex: none; }
+.note { margin: 0; font-size: 14px; color: var(--muted); max-width: 80ch; }
+.err { padding: 24px; color: var(--ink-2); }
+@media (max-width: 560px) { .viewbtns { top: auto; bottom: 40px; } .found b { font-size: 24px; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Drone search · satellite tip to boat found · 3D replay</div>
+    <h1>Watch the drones hunt for a boat that has already moved</h1>
+    <p class="lede">The cross is where the satellite saw the boat. Grey boats are where it could really be; they light up in the drone's colour when a camera cone passes over them. Drag to orbit, scroll or pinch to zoom. Pick “Real fishing boats” to watch recorded boat paths that turn and wander.</p>
+  </header>
+
+  <div class="controls" aria-label="Scenario controls">
+    <div class="group"><span class="label" id="scenlbl">Boats</span><select id="scen" aria-labelledby="scenlbl"></select></div>
+    <div class="group"><span class="label" id="modelbl">Team</span><div class="seg" role="group" aria-labelledby="modelbl" id="modes"></div></div>
+    <div class="group"><span class="label" id="stratlbl">Search</span><select id="strat" aria-labelledby="stratlbl"></select></div>
+    <div class="group"><span class="label" id="agelbl">Tip age</span><div class="seg" role="group" aria-labelledby="agelbl" id="ages"></div></div>
+  </div>
+
+  <div class="stage" id="stage">
+    <canvas id="scene" aria-label="3D view of the drones searching the sea for the boat"></canvas>
+    <div class="hud" aria-live="off">
+      <div class="chip clock" id="clock">T+00:00<small>since satellite pass</small></div>
+      <div class="chip phase" id="phase" data-phase="transit"><i></i><span id="phasetxt">Drones en route</span></div>
+      <div class="chip found"><b id="nfound">0</b><span id="nof">of 300 boats found</span></div>
+    </div>
+    <div class="viewbtns">
+      <button type="button" id="follow" aria-pressed="false">Follow drone</button>
+      <button type="button" id="reset">Reset view</button>
+    </div>
+    <div class="corner" id="corner"></div>
+  </div>
+
+  <div class="timeline">
+    <div class="group">
+      <button class="btn" id="play" type="button">Play</button>
+      <button class="btn ghost" id="pause" type="button">Pause</button>
+      <select id="speed" aria-label="Playback speed">
+        <option value="60">60×</option>
+        <option value="120" selected>120×</option>
+        <option value="240">240×</option>
+      </select>
+    </div>
+    <input type="range" id="scrub" min="0" max="1000" value="0" step="1" aria-label="Time since satellite pass">
+  </div>
+
+  <div class="key">
+    <span><i style="width:14px;height:6px;border-radius:2px;background:var(--boat)"></i>Possible boat, not seen yet</span>
+    <span><i style="width:14px;height:6px;border-radius:2px;background:var(--s3)"></i>Spotted (in that search's colour)</span>
+    <span><i style="width:14px;height:10px;border-radius:7px 7px 0 0;border:1.5px solid var(--ink-2);border-bottom:0"></i>Camera cone: sees boats within 1 km</span>
+    <span id="ringkey"><i style="width:18px;height:0;border-top:1.5px dashed var(--ink-2)"></i>How far a boat could have gone</span>
+  </div>
+  <p class="note">Every search here was planned and scored in Python (the cuesearch code); this page only replays it. Drone height is exaggerated so the camera cones are visible; real search height would be a few hundred metres. Real fishing boats come from NOAA ship-tracking (AIS) data, US waters, Jan 1 2023.</p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="demo_data.js"></script>
+<script>
+(() => {
+  const D = window.DEMO;
+  if (!D || !window.THREE) {
+    document.getElementById("stage").innerHTML = '<p class="err">The 3D view could not load. Check your connection and reload the page.</p>';
+    return;
+  }
+  const KNOT_KMS = 0.514444 / 1000;
+  const META = {
+    expanding_square: { c: "--s1", 1: "Standard pattern", 3: "Standard pattern ×3" },
+    ring_search: { c: "--s2", 1: "Ring search", 3: "Ring search ×3" },
+    probability_greedy: { c: "--s3", 1: "Smart search" },
+    greedy_independent: { c: "--s4", 3: "Smart, separate ×3" },
+    greedy_shared: { c: "--s3", 3: "Smart, shared map ×3" },
+    ring_then_smart: { c: "--s5", 3: "Ring, then smart ×3" },
+    guard_plus_smart: { c: "--s6", 3: "Guard + smart ×3" },
+  };
+  const A = D.assumptions, END_S = A.endurance_min * 60;
+  const $ = id => document.getElementById(id);
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  let scenIdx = Math.max(0, D.scenarios.findIndex(s => s.id === "real_learned"));
+  let modeIdx = Math.max(0, D.scenarios[0].modes.findIndex(m => m.id === "3"));
+  let ageIdx = Math.max(0, D.ages_min.indexOf(10));
+  let stratKey = null, t = 0, playing = false, last = null, follow = false;
+
+  const scen = () => D.scenarios[scenIdx];
+  const mode = () => scen().modes[modeIdx];
+  const isReal = () => !!scen().real;
+  const boats = () => (scen().boats || D[scen().boats_ref])[ageIdx];
+  const nB = () => (boats().offset_km || boats().track_km).length;
+  const run = () => mode().playback[ageIdx].runs[stratKey];
+  const arrival = () => D.ages_min[ageIdx] * 60;
+  const total = () => arrival() + END_S;
+
+  function pointAt(path, s, every) {
+    const f = Math.max(0, Math.min(s / every, path.length - 1));
+    const i = Math.floor(f), k = f - i, a = path[i], b = path[Math.min(i + 1, path.length - 1)];
+    return [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k];
+  }
+  function boatAt(i, tt) {
+    const b = boats();
+    if (b.track_km) return pointAt(b.track_km[i], tt, b.dt_s);
+    const o = b.offset_km[i], v = b.velocity_kms[i];
+    return [o[0] + v[0] * tt, o[1] + v[1] * tt];
+  }
+
+  // ---------- three.js scene (x = east km, z = -north km, y = up)
+  const canvas = $("scene");
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(45, 1, 0.05, 2000);
+  const controls = new THREE.OrbitControls(camera, canvas);
+  controls.enableDamping = true;
+  controls.maxPolarAngle = Math.PI * 0.48;
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x445566, 0.9));
+  const sun = new THREE.DirectionalLight(0xffffff, 0.6);
+  sun.position.set(-30, 60, 20);
+  scene.add(sun);
+
+  const col = n => new THREE.Color(css(n));
+  const sea = new THREE.Mesh(new THREE.CircleGeometry(1, 96), new THREE.MeshStandardMaterial({ roughness: 0.9, metalness: 0 }));
+  sea.rotation.x = -Math.PI / 2;
+  scene.add(sea);
+
+  const gridGroup = new THREE.Group();
+  scene.add(gridGroup);
+  const circlePts = n => Array.from({ length: n + 1 }, (_, i) => {
+    const a = (i / n) * Math.PI * 2;
+    return new THREE.Vector3(Math.cos(a), 0, Math.sin(a));
+  });
+  const unitCircle = new THREE.BufferGeometry().setFromPoints(circlePts(128));
+  const gridMat = new THREE.LineBasicMaterial({ transparent: true, opacity: 0.55 });
+  // dashes are measured on the unit circle before scaling, so about 60 dashes per ring at any size
+  const rangeMat = new THREE.LineDashedMaterial({ dashSize: 0.06, gapSize: 0.045, transparent: true, opacity: 0.8 });
+  const rangeRings = [0, 1].map(() => {
+    const l = new THREE.Line(unitCircle.clone(), rangeMat);
+    l.computeLineDistances();
+    l.position.y = 0.02;
+    scene.add(l);
+    return l;
+  });
+
+  // cue marker: a cross on the water and a thin post
+  const cue = new THREE.Group();
+  const cueMat = new THREE.LineBasicMaterial();
+  cue.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(-1, 0.03, 0), new THREE.Vector3(1, 0.03, 0),
+    new THREE.Vector3(0, 0.03, -1), new THREE.Vector3(0, 0.03, 1),
+    new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 1, 0)]), cueMat));
+  scene.add(cue);
+
+  // boats: one instanced hull, plus wakes as one line-segment buffer
+  const MAX_BOATS = 400, WAKE_N = 10, WAKE_STEP_S = 30;
+  const hull = new THREE.ConeGeometry(0.5, 2.2, 4);
+  hull.rotateZ(-Math.PI / 2);          // point along +x
+  hull.scale(1, 0.45, 0.7);
+  const boatMesh = new THREE.InstancedMesh(hull, new THREE.MeshStandardMaterial({ roughness: 0.6 }), MAX_BOATS);
+  boatMesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(MAX_BOATS * 3), 3);
+  scene.add(boatMesh);
+  const wakeGeo = new THREE.BufferGeometry();
+  wakeGeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(MAX_BOATS * (WAKE_N - 1) * 2 * 3), 3));
+  const wakeMat = new THREE.LineBasicMaterial({ transparent: true, opacity: 0.55 });
+  const wakes = new THREE.LineSegments(wakeGeo, wakeMat);
+  scene.add(wakes);
+
+  // drones (rebuilt when the team or search changes)
+  let droneObjs = [];
+  const droneGroup = new THREE.Group();
+  scene.add(droneGroup);
+
+  let R = 10, alt = 1;   // view radius and (exaggerated) flying height, km
+  function viewRadius() {
+    let r = 4;
+    const T = total();
+    for (let i = 0; i < nB(); i++) { const p = boatAt(i, T); r = Math.max(r, Math.hypot(p[0], p[1])); }
+    for (const path of run().paths) for (const p of path) r = Math.max(r, Math.hypot(p[0], p[1]));
+    return Math.min(r * 1.08, 400);
+  }
+  function ringStep(r) { for (const s of [1, 2, 5, 10, 20, 50]) if (r / s <= 5) return s; return 100; }
+
+  function buildWorld() {
+    R = viewRadius();
+    alt = Math.max(0.6, R * 0.05);
+    sea.scale.setScalar(R * 1.6);
+    gridGroup.clear();
+    const step = ringStep(R);
+    for (let r = step; r <= R * 1.5; r += step) {
+      const l = new THREE.Line(unitCircle, gridMat);
+      l.scale.setScalar(r); l.position.y = 0.01;
+      gridGroup.add(l);
+    }
+    cue.scale.set(R * 0.03, alt * 0.9, R * 0.03);
+    const s = R * 0.011;
+    boatMesh.userData.size = s;
+    $("corner").textContent = `rings every ${step} km · height ×${Math.round(alt / 0.15)}`;
+    $("ringkey").hidden = isReal();
+
+    droneGroup.clear();
+    const c = col(META[stratKey].c);
+    droneObjs = run().paths.map(path => {
+      const g = new THREE.Group();
+      const body = new THREE.Mesh(new THREE.OctahedronGeometry(R * 0.012), new THREE.MeshStandardMaterial({ color: c, roughness: 0.4 }));
+      const arm = new THREE.Mesh(new THREE.BoxGeometry(R * 0.04, R * 0.003, R * 0.006), new THREE.MeshStandardMaterial({ color: c }));
+      const arm2 = arm.clone(); arm2.rotation.y = Math.PI / 2;
+      g.add(body, arm, arm2);
+      const cone = new THREE.Mesh(new THREE.ConeGeometry(A.sweep_radius_km, alt, 40, 1, true),
+        new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: 0.16, side: THREE.DoubleSide, depthWrite: false }));
+      cone.position.y = -alt / 2;
+      const foot = new THREE.Mesh(new THREE.CircleGeometry(A.sweep_radius_km, 48),
+        new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: 0.28, depthWrite: false }));
+      foot.rotation.x = -Math.PI / 2; foot.position.y = -alt + 0.015;
+      g.add(cone, foot);
+      const trailGeo = new THREE.BufferGeometry();
+      trailGeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array((path.length + 2) * 3), 3));
+      const trail = new THREE.Line(trailGeo, new THREE.LineBasicMaterial({ color: c }));
+      const shadowGeo = new THREE.BufferGeometry();
+      shadowGeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array((path.length + 2) * 3), 3));
+      const shadow = new THREE.Line(shadowGeo, new THREE.LineBasicMaterial({ color: c, transparent: true, opacity: 0.35 }));
+      droneGroup.add(g, trail, shadow);
+      return { path, g, trail, shadow };
+    });
+    applyTheme();
+  }
+
+  function resetView() {
+    controls.target.set(0, 0, 0);
+    camera.position.set(-R * 0.55, R * 1.05, R * 1.25);
+    camera.near = R * 0.002; camera.far = R * 20; camera.updateProjectionMatrix();
+    controls.update();
+  }
+
+  function applyTheme() {
+    scene.background = col("--sea-deep");
+    sea.material.color = col("--sea");
+    gridMat.color = col("--grid");
+    rangeMat.color = col("--ink-2");
+    cueMat.color = col("--ink");
+    wakeMat.color = col("--wake");
+  }
+
+  const tmp = new THREE.Object3D();
+  const cBoat = new THREE.Color(), cSeen = new THREE.Color();
+  function draw() {
+    const tt = t, s = tt - arrival(), r = run(), n = nB(), size = boatMesh.userData.size;
+    cBoat.copy(col("--boat")); cSeen.copy(col(META[stratKey].c));
+    let found = 0;
+    const wp = wakeGeo.attributes.position.array;
+    for (let i = 0; i < MAX_BOATS; i++) {
+      if (i >= n) { tmp.scale.setScalar(0); tmp.updateMatrix(); boatMesh.setMatrixAt(i, tmp.matrix); continue; }
+      const p = boatAt(i, tt), q = boatAt(i, Math.max(0, tt - 20));
+      const seen = s >= 0 && r.found_s[i] !== null && r.found_s[i] <= s;
+      if (seen) found++;
+      tmp.position.set(p[0], size * 0.25, -p[1]);
+      const dx = p[0] - q[0], dy = p[1] - q[1];
+      tmp.rotation.set(0, Math.hypot(dx, dy) > 1e-6 ? Math.atan2(dy, dx) : 0, 0);
+      tmp.scale.setScalar(size * (seen ? 1.5 : 1));
+      tmp.updateMatrix();
+      boatMesh.setMatrixAt(i, tmp.matrix);
+      boatMesh.setColorAt(i, seen ? cSeen : cBoat);
+      for (let k = 0; k < WAKE_N - 1; k++) {
+        const a = boatAt(i, Math.max(0, tt - k * WAKE_STEP_S)), b = boatAt(i, Math.max(0, tt - (k + 1) * WAKE_STEP_S));
+        const o = ((i * (WAKE_N - 1)) + k) * 6;
+        wp[o] = a[0]; wp[o + 1] = 0.01; wp[o + 2] = -a[1];
+        wp[o + 3] = b[0]; wp[o + 4] = 0.01; wp[o + 5] = -b[1];
+      }
+    }
+    wakeGeo.setDrawRange(0, n * (WAKE_N - 1) * 2);
+    wakeGeo.attributes.position.needsUpdate = true;
+    boatMesh.instanceMatrix.needsUpdate = true;
+    boatMesh.instanceColor.needsUpdate = true;
+
+    const vmin = isReal() ? 0 : scen().truth_kn[0] * KNOT_KMS, vmax = isReal() ? 0 : scen().truth_kn[1] * KNOT_KMS;
+    [vmin * tt, vmax * tt].forEach((rad, j) => {
+      rangeRings[j].visible = !isReal() && rad > 0.05;
+      rangeRings[j].scale.setScalar(Math.max(rad, 1e-3));
+    });
+
+    for (const d of droneObjs) {
+      const active = s >= 0;
+      d.g.visible = d.trail.visible = d.shadow.visible = active;
+      if (!active) continue;
+      const here = pointAt(d.path, s, D.path_every_s);
+      d.g.position.set(here[0], alt, -here[1]);
+      const m = Math.min(Math.floor(s / D.path_every_s), d.path.length - 1);
+      const tp = d.trail.geometry.attributes.position.array, sp = d.shadow.geometry.attributes.position.array;
+      for (let i = 0; i <= m; i++) {
+        tp[i * 3] = d.path[i][0]; tp[i * 3 + 1] = alt; tp[i * 3 + 2] = -d.path[i][1];
+        sp[i * 3] = d.path[i][0]; sp[i * 3 + 1] = 0.02; sp[i * 3 + 2] = -d.path[i][1];
+      }
+      tp[(m + 1) * 3] = here[0]; tp[(m + 1) * 3 + 1] = alt; tp[(m + 1) * 3 + 2] = -here[1];
+      sp[(m + 1) * 3] = here[0]; sp[(m + 1) * 3 + 1] = 0.02; sp[(m + 1) * 3 + 2] = -here[1];
+      d.trail.geometry.setDrawRange(0, m + 2); d.trail.geometry.attributes.position.needsUpdate = true;
+      d.shadow.geometry.setDrawRange(0, m + 2); d.shadow.geometry.attributes.position.needsUpdate = true;
+    }
+    if (follow && droneObjs.length && s >= 0) {
+      const g = droneObjs[0].g.position, dx = g.x - controls.target.x, dz = g.z - controls.target.z;
+      controls.target.x += dx; controls.target.z += dz;
+      camera.position.x += dx; camera.position.z += dz;
+    }
+
+    const mm = String(Math.floor(tt / 60)).padStart(2, "0"), ss = String(Math.floor(tt % 60)).padStart(2, "0");
+    $("clock").innerHTML = `T+${mm}:${ss}<small>since satellite pass</small>`;
+    const ph = $("phase");
+    const many = mode().drones > 1 ? "Drones" : "Drone";
+    if (s < 0) { ph.dataset.phase = "transit"; const l = -s; $("phasetxt").textContent = `${many} en route · arrive in ${Math.floor(l / 60)}:${String(Math.floor(l % 60)).padStart(2, "0")}`; }
+    else if (s < END_S) { ph.dataset.phase = "search"; $("phasetxt").textContent = `Searching · ${Math.floor(s / 60)} of ${A.endurance_min} min used`; }
+    else { ph.dataset.phase = "done"; $("phasetxt").textContent = "Battery out · search over"; }
+    $("nfound").textContent = found;
+    $("nof").textContent = `of ${n} boats found (${Math.round(100 * found / n)}%)`;
+    $("scrub").value = Math.round(1000 * tt / total());
+  }
+
+  function resize() {
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    if (!w || !h) return;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h; camera.updateProjectionMatrix();
+  }
+  new ResizeObserver(resize).observe(canvas);
+
+  function loop(ts) {
+    if (playing) {
+      if (last !== null) {
+        t = Math.min(total(), t + (ts - last) / 1000 * Number($("speed").value));
+        if (t >= total()) playing = false;
+      }
+      last = ts;
+      draw();
+    } else last = null;
+    controls.update();
+    renderer.render(scene, camera);
+    requestAnimationFrame(loop);
+  }
+
+  // ---------- controls
+  function seg(container, labels, current, onPick) {
+    container.innerHTML = "";
+    labels.forEach(([id, text], i) => {
+      const b = document.createElement("button");
+      b.type = "button"; b.id = id; b.textContent = text;
+      b.setAttribute("aria-pressed", i === current);
+      b.addEventListener("click", () => {
+        [...container.children].forEach((c, j) => c.setAttribute("aria-pressed", j === i));
+        onPick(i);
+      });
+      container.appendChild(b);
+    });
+  }
+  function fillStrategies() {
+    const keys = mode().strategies;
+    if (!keys.includes(stratKey)) stratKey = keys.includes("greedy_shared") ? "greedy_shared" : keys.includes("probability_greedy") ? "probability_greedy" : keys[0];
+    $("strat").innerHTML = keys.map(k => `<option value="${k}"${k === stratKey ? " selected" : ""}>${META[k][mode().drones]}</option>`).join("");
+  }
+  function rebuild(keepView) {
+    playing = false;
+    fillStrategies();
+    buildWorld();
+    if (!keepView) resetView();
+    setTime(Math.min(arrival() + 20 * 60, total()));
+  }
+  function setTime(v) { t = Math.max(0, Math.min(v, total())); draw(); }
+
+  $("scen").innerHTML = D.scenarios.map((s, i) => `<option value="${i}"${i === scenIdx ? " selected" : ""}>${s.label}</option>`).join("");
+  $("scen").addEventListener("change", e => { scenIdx = Number(e.target.value); rebuild(); });
+  seg($("modes"), D.scenarios[0].modes.map(m => [`mode-${m.id}`, m.label]), modeIdx, i => { modeIdx = i; rebuild(true); });
+  $("strat").addEventListener("change", e => { stratKey = e.target.value; rebuild(true); });
+  seg($("ages"), D.ages_min.map(a => [`age-${a}`, `${a} min`]), ageIdx, i => { ageIdx = i; rebuild(); });
+  $("play").addEventListener("click", () => {
+    $("pause").textContent = "Pause";
+    t = 0;
+    if (reduced) { setTime(total()); return; }
+    playing = true;
+  });
+  $("pause").addEventListener("click", () => {
+    if (playing) { playing = false; $("pause").textContent = "Resume"; }
+    else { $("pause").textContent = "Pause"; if (t >= total()) t = 0; playing = !reduced; }
+  });
+  $("scrub").addEventListener("input", e => { playing = false; setTime(total() * e.target.value / 1000); });
+  $("reset").addEventListener("click", () => { follow = false; $("follow").setAttribute("aria-pressed", "false"); resetView(); });
+  $("follow").addEventListener("click", () => {
+    follow = !follow;
+    $("follow").setAttribute("aria-pressed", String(follow));
+    if (follow && droneObjs.length) {
+      const g = droneObjs[0].g.position;
+      controls.target.set(g.x, 0, g.z);
+      camera.position.set(g.x - R * 0.12, R * 0.22, g.z + R * 0.28);
+    }
+    draw();
+  });
+  const retheme = () => { applyTheme(); draw(); };
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", retheme);
+  new MutationObserver(retheme).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+  resize();
+  rebuild();
+  requestAnimationFrame(loop);
+})();
+</script>
