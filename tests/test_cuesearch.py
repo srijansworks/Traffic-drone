@@ -270,6 +270,42 @@ def test_track_prior_from_fake_ais():
     check("the smart search runs on a TrackPrior", len(path.times) > 10)
 
 
+def test_fab():
+    print("Brown's FAB (theoretical ceiling)")
+    from cuesearch.fab import fab_plan, water_fill
+    g = np.array([4.0, 2.0, 1.0, 0.0, 0.5])
+    e = water_fill(g, 3.0, 1.0)
+    check("water-filling spends exactly the budget", abs(e.sum() - 3.0) < 1e-9)
+    check("no effort where nothing can be", e[3] == 0)
+    obj = lambda x: (g * (1 - np.exp(-x))).sum()
+    rng = np.random.default_rng(0)
+    others = [rng.dirichlet(np.ones(5) * (g > 0) + 1e-9) * 3.0 for _ in range(300)]
+    check("water-filling beats 300 random splits", all(obj(e) >= obj(o) - 1e-9 for o in others))
+    check("equal cells get equal effort", np.allclose(water_fill(np.ones(4), 2.0, 1.0), 0.5))
+
+    still = BoatPrior(speed_kn=(0.0, 0.0), cue_error_m=0.0)
+    d = Drone(speed_ms=10.0, sweep_radius_m=50.0, endurance_s=600.0)
+    plan = fab_plan(0.0, d, still, n_particles=50, cell_m=100.0, step_s=60.0)
+    expect = 1 - np.exp(-(2 * 50 * 10 * 600) / 100.0 ** 2)
+    p = plan.p_found(still.sample(5, np.random.default_rng(1))).mean()
+    check("a boat that never moves gets all the effort", abs(p - expect) < 1e-9, f"{p:.4f} vs {expect:.4f}")
+
+    plan = fab_plan(300.0, Drone(), BoatPrior(), n_particles=800, iters=15, seed=2)
+    k = len(plan.times)
+    check("each step spends the drones' sweep budget",
+          np.allclose(plan.effort.sum(axis=1), 2 * 1000.0 * 45.0 * 60.0))
+    parts = BoatPrior().sample(800, np.random.default_rng(2))
+    fab_p = plan.p_found(parts).mean()
+    flat = plan.effort.copy()
+    for j in range(k):
+        used = flat[j] > 0
+        flat[j] = np.where(used, flat[j].sum() / used.sum(), 0.0)
+    flat_plan = type(plan)(plan.times, plan.origin, plan.cell_m, plan.shape, flat)
+    check("FAB beats spreading the same cells evenly (on its own guesses)",
+          fab_p >= flat_plan.p_found(parts).mean() - 1e-9,
+          f"{fab_p:.3f} vs {flat_plan.p_found(parts).mean():.3f}")
+
+
 def test_wilson():
     print("confidence interval")
     lo, hi = wilson(0, 10)
@@ -290,6 +326,7 @@ if __name__ == "__main__":
     test_team()
     test_combos()
     test_track_boats_match_straight_lines()
+    test_fab()
     test_track_prior_from_fake_ais()
     test_boats_never_share_the_searchers_random_stream()
     test_wilson()
