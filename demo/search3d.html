@@ -6,23 +6,28 @@
 :root {
   --bg: #f3f6f6;
   --panel: #ffffff;
-  --sea: #c9dde2;
-  --sea-deep: #9fbfc8;
   --ink: #13232b;
   --ink-2: #4b5b63;
   --muted: #6f7f86;
   --rule: #d3dddf;
-  --grid: #86a6af;
-  --boat: #50626a;
-  --wake: #ffffff;
+  --focus: #2a78d6;
+  --hud: rgba(255, 255, 255, .82);
   --s1: #2a78d6;
   --s2: #eb6834;
   --s3: #1baf7a;
   --s4: #eda100;
   --s5: #e34948;
   --s6: #4a3aa7;
-  --focus: #2a78d6;
-  --hud: rgba(255, 255, 255, .86);
+  /* scene */
+  --sky-top: #8fc1d6;
+  --sky-horizon: #e6f0f2;
+  --water: #2f7f95;
+  --water-deep: #1b5466;
+  --foam: #f2fafb;
+  --grid: #a8d0db;
+  --boat: #eef3f4;
+  --cabin: #c4d2d7;
+  --tip: #f4b23a;
   --display: "Barlow Condensed", "Arial Narrow", "Helvetica Neue", sans-serif;
   --body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
   --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
@@ -32,56 +37,64 @@
     color-scheme: dark;
     --bg: #0f1b22;
     --panel: #14232c;
-    --sea: #0d2430;
-    --sea-deep: #081820;
     --ink: #e3ecee;
     --ink-2: #a8b8be;
     --muted: #84969d;
     --rule: #24363f;
-    --grid: #2b4c5a;
-    --boat: #9fb3ba;
-    --wake: #cfe3ea;
+    --focus: #6aa8ef;
+    --hud: rgba(12, 22, 28, .8);
     --s1: #3987e5;
     --s2: #d95926;
-    --s3: #199e70;
+    --s3: #22b07f;
     --s4: #c98500;
     --s5: #e66767;
     --s6: #9085e9;
-    --focus: #6aa8ef;
-    --hud: rgba(15, 27, 34, .84);
+    --sky-top: #03080c;
+    --sky-horizon: #143442;
+    --water: #11394a;
+    --water-deep: #061923;
+    --foam: #a9d2de;
+    --grid: #24505f;
+    --boat: #d6e1e5;
+    --cabin: #8ea3ab;
+    --tip: #f0a92c;
   }
 }
 :root[data-theme="dark"] {
   color-scheme: dark;
   --bg: #0f1b22;
   --panel: #14232c;
-  --sea: #0d2430;
-  --sea-deep: #081820;
   --ink: #e3ecee;
   --ink-2: #a8b8be;
   --muted: #84969d;
   --rule: #24363f;
-  --grid: #2b4c5a;
-  --boat: #9fb3ba;
-  --wake: #cfe3ea;
+  --focus: #6aa8ef;
+  --hud: rgba(12, 22, 28, .8);
   --s1: #3987e5;
   --s2: #d95926;
-  --s3: #199e70;
+  --s3: #22b07f;
   --s4: #c98500;
   --s5: #e66767;
   --s6: #9085e9;
-  --focus: #6aa8ef;
-  --hud: rgba(15, 27, 34, .84);
+  --sky-top: #03080c;
+  --sky-horizon: #143442;
+  --water: #11394a;
+  --water-deep: #061923;
+  --foam: #a9d2de;
+  --grid: #24505f;
+  --boat: #d6e1e5;
+  --cabin: #8ea3ab;
+  --tip: #f0a92c;
 }
 * { box-sizing: border-box; }
 body { background: var(--bg); color: var(--ink); font: 16px/1.5 var(--body); }
-.wrap { max-width: 1240px; margin: 0 auto; padding-inline: 20px; padding-block: 24px 48px; display: grid; gap: 18px; }
-header { display: grid; gap: 6px; max-width: 780px; }
+.wrap { max-width: 1280px; margin: 0 auto; padding-inline: 20px; padding-block: 24px 48px; display: grid; gap: 16px; }
+header { display: grid; gap: 6px; max-width: 800px; }
 .eyebrow { font: 500 12px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
-h1 { font: 600 clamp(26px, 4vw, 40px)/1.08 var(--display); margin: 0; text-wrap: balance; }
-.lede { margin: 0; color: var(--ink-2); max-width: 68ch; }
+h1 { font: 600 clamp(28px, 4.2vw, 44px)/1.04 var(--display); margin: 0; text-wrap: balance; letter-spacing: .005em; }
+.lede { margin: 0; color: var(--ink-2); max-width: 70ch; }
 
-.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; padding-block: 12px; border-block: 1px solid var(--rule); }
+.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px; padding-block: 12px; border-block: 1px solid var(--rule); }
 .group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .label { font: 500 11px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 .seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; }
@@ -89,43 +102,57 @@ h1 { font: 600 clamp(26px, 4vw, 40px)/1.08 var(--display); margin: 0; text-wrap:
 .seg button + button { border-left: 1px solid var(--rule); }
 .seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
 select { font: 500 13px/1 var(--mono); padding: 8px 10px; border-radius: 6px; border: 1px solid var(--rule); background: var(--panel); color: var(--ink); max-width: 100%; }
-.btn { font: 600 15px/1 var(--body); padding: 10px 16px; border-radius: 6px; border: 1px solid var(--ink); background: var(--ink); color: var(--bg); cursor: pointer; }
+.btn { font: 600 15px/1 var(--body); padding: 10px 18px; border-radius: 6px; border: 1px solid var(--ink); background: var(--ink); color: var(--bg); cursor: pointer; }
 .btn.ghost { background: transparent; color: var(--ink); border-color: var(--rule); }
 button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 
-.stage { position: relative; border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; background: var(--sea); }
-#scene { display: block; width: 100%; height: min(68vh, 640px); min-height: 340px; touch-action: none; }
-.hud { position: absolute; left: 12px; top: 12px; display: grid; gap: 8px; pointer-events: none; max-width: calc(100% - 24px); }
-.chip { background: var(--hud); border: 1px solid var(--rule); border-radius: 6px; padding: 8px 11px; backdrop-filter: blur(4px); }
-.clock { font: 500 22px/1 var(--mono); font-variant-numeric: tabular-nums; }
-.clock small { font-size: 11px; color: var(--muted); margin-left: 6px; }
+.stage { position: relative; border-radius: 10px; overflow: hidden; background: var(--water-deep); box-shadow: 0 1px 0 var(--rule), 0 18px 40px -24px rgba(8, 30, 40, .55); }
+#scene { display: block; width: 100%; height: min(72vh, 680px); min-height: 360px; touch-action: none; cursor: grab; }
+#scene:active { cursor: grabbing; }
+.labels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.tag { position: absolute; transform: translate(-50%, -100%); white-space: nowrap; font: 500 11px/1 var(--mono); letter-spacing: .04em; padding: 4px 6px; border-radius: 4px; background: var(--hud); color: var(--ink); border: 1px solid var(--rule); }
+.tag.tip { border-color: var(--tip); }
+.tag.km { background: none; border: 0; color: var(--foam); opacity: .8; transform: translate(-50%, -50%); text-shadow: 0 1px 2px rgba(0, 0, 0, .45); }
+.tag[hidden] { display: none; }
+.hud { position: absolute; left: 14px; top: 14px; display: grid; gap: 8px; pointer-events: none; max-width: calc(100% - 28px); }
+.chip { background: var(--hud); border: 1px solid var(--rule); border-radius: 8px; padding: 9px 12px; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.clock { font: 500 24px/1 var(--mono); font-variant-numeric: tabular-nums; }
+.clock small { display: block; margin-top: 4px; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 .phase { font: 600 13px/1.2 var(--body); display: flex; align-items: center; gap: 8px; }
 .phase i { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex: none; }
-.phase[data-phase="search"] i { background: var(--s3); }
+.phase[data-phase="search"] i { background: var(--s3); box-shadow: 0 0 0 4px color-mix(in srgb, var(--s3) 25%, transparent); }
 .phase[data-phase="transit"] i { background: var(--s2); }
-.found { display: flex; align-items: baseline; gap: 8px; font-variant-numeric: tabular-nums; }
-.found b { font: 600 30px/1 var(--display); }
+.found { display: grid; gap: 6px; min-width: 190px; }
+.found .row { display: flex; align-items: baseline; gap: 8px; font-variant-numeric: tabular-nums; }
+.found b { font: 600 32px/1 var(--display); }
 .found span { font-size: 13px; color: var(--ink-2); }
-.corner { position: absolute; right: 12px; bottom: 12px; font: 500 11px/1.4 var(--mono); color: var(--ink-2); text-align: right; pointer-events: none; }
-.viewbtns { position: absolute; right: 12px; top: 12px; display: flex; gap: 6px; }
-.viewbtns button { font: 500 12px/1 var(--mono); padding: 8px 10px; border-radius: 6px; border: 1px solid var(--rule); background: var(--hud); color: var(--ink); cursor: pointer; }
+.meter { height: 5px; border-radius: 3px; background: color-mix(in srgb, var(--ink) 12%, transparent); overflow: hidden; }
+.meter i { display: block; height: 100%; width: 0; border-radius: 3px; background: var(--s3); transition: width .2s; }
+.viewbtns { position: absolute; right: 14px; top: 14px; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.viewbtns button { font: 500 12px/1 var(--mono); padding: 9px 11px; border-radius: 6px; border: 1px solid var(--rule); background: var(--hud); color: var(--ink); cursor: pointer; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
 .viewbtns button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.corner { position: absolute; right: 14px; bottom: 12px; font: 500 11px/1.4 var(--mono); color: var(--foam); opacity: .85; text-align: right; pointer-events: none; text-shadow: 0 1px 2px rgba(0, 0, 0, .5); }
 
-.timeline { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: center; }
+.timeline { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: center; }
 input[type="range"] { width: 100%; accent-color: var(--ink); }
 .key { display: flex; flex-wrap: wrap; gap: 8px 22px; font-size: 14px; color: var(--ink-2); }
 .key span { display: inline-flex; align-items: center; gap: 8px; }
 .key i { display: inline-block; flex: none; }
-.note { margin: 0; font-size: 14px; color: var(--muted); max-width: 80ch; }
+.note { margin: 0; font-size: 14px; color: var(--muted); max-width: 82ch; }
 .err { padding: 24px; color: var(--ink-2); }
-@media (max-width: 560px) { .viewbtns { top: auto; bottom: 40px; } .found b { font-size: 24px; } }
+@media (max-width: 620px) {
+  .viewbtns { top: auto; bottom: 34px; }
+  .found { min-width: 0; }
+  .found b { font-size: 24px; }
+  .timeline { grid-template-columns: 1fr; }
+}
 </style>
 
 <div class="wrap">
   <header>
     <div class="eyebrow">Drone search · satellite tip to boat found · 3D replay</div>
     <h1>Watch the drones hunt for a boat that has already moved</h1>
-    <p class="lede">The cross is where the satellite saw the boat. Grey boats are where it could really be; they light up in the drone's colour when a camera cone passes over them. Drag to orbit, scroll or pinch to zoom. Pick “Real fishing boats” to watch recorded boat paths that turn and wander.</p>
+    <p class="lede">The gold beacon is where the satellite saw the boat. Every white boat is a place it could really be by now; a boat lights up in the drones' colour the moment a camera cone passes over it. Drag to orbit, scroll or pinch to zoom.</p>
   </header>
 
   <div class="controls" aria-label="Scenario controls">
@@ -136,13 +163,18 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
   </div>
 
   <div class="stage" id="stage">
-    <canvas id="scene" aria-label="3D view of the drones searching the sea for the boat"></canvas>
+    <canvas id="scene" aria-label="3D view of drones searching the sea for a boat"></canvas>
+    <div class="labels" id="labels"></div>
     <div class="hud" aria-live="off">
       <div class="chip clock" id="clock">T+00:00<small>since satellite pass</small></div>
       <div class="chip phase" id="phase" data-phase="transit"><i></i><span id="phasetxt">Drones en route</span></div>
-      <div class="chip found"><b id="nfound">0</b><span id="nof">of 300 boats found</span></div>
+      <div class="chip found">
+        <div class="row"><b id="nfound">0</b><span id="nof">of 300 boats found</span></div>
+        <div class="meter"><i id="meter"></i></div>
+      </div>
     </div>
     <div class="viewbtns">
+      <button type="button" id="orbit" aria-pressed="false">Orbit</button>
       <button type="button" id="follow" aria-pressed="false">Follow drone</button>
       <button type="button" id="reset">Reset view</button>
     </div>
@@ -151,7 +183,7 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
 
   <div class="timeline">
     <div class="group">
-      <button class="btn" id="play" type="button">Play</button>
+      <button class="btn" id="play" type="button">Play from satellite pass</button>
       <button class="btn ghost" id="pause" type="button">Pause</button>
       <select id="speed" aria-label="Playback speed">
         <option value="60">60×</option>
@@ -163,12 +195,13 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
   </div>
 
   <div class="key">
-    <span><i style="width:14px;height:6px;border-radius:2px;background:var(--boat)"></i>Possible boat, not seen yet</span>
-    <span><i style="width:14px;height:6px;border-radius:2px;background:var(--s3)"></i>Spotted (in that search's colour)</span>
-    <span><i style="width:14px;height:10px;border-radius:7px 7px 0 0;border:1.5px solid var(--ink-2);border-bottom:0"></i>Camera cone: sees boats within 1 km</span>
-    <span id="ringkey"><i style="width:18px;height:0;border-top:1.5px dashed var(--ink-2)"></i>How far a boat could have gone</span>
+    <span><i style="width:16px;height:7px;border-radius:2px 6px 6px 2px;background:var(--boat);border:1px solid var(--muted)"></i>Possible boat, not seen yet</span>
+    <span><i style="width:16px;height:7px;border-radius:2px 6px 6px 2px;background:var(--s3)"></i>Spotted (in the search's colour)</span>
+    <span><i style="width:14px;height:12px;clip-path:polygon(50% 0,100% 100%,0 100%);background:color-mix(in srgb,var(--s3) 45%,transparent)"></i>Camera cone: sees boats within 1 km</span>
+    <span><i style="width:10px;height:10px;border-radius:50%;border:2px solid var(--tip)"></i>Satellite tip</span>
+    <span id="ringkey"><i style="width:18px;height:0;border-top:2px dashed var(--ink-2)"></i>How far a boat could have gone</span>
   </div>
-  <p class="note">Every search here was planned and scored in Python (the cuesearch code); this page only replays it. Drone height is exaggerated so the camera cones are visible; real search height would be a few hundred metres. Real fishing boats come from NOAA ship-tracking (AIS) data, US waters, Jan 1 2023.</p>
+  <p class="note">Every search here was planned and scored in Python (the cuesearch code); this page only replays it. Boats, drones and flying height are drawn much larger than life so they can be seen at this scale. Real fishing boats come from NOAA ship-tracking (AIS) data, US waters, Jan 1 2023.</p>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -194,6 +227,7 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
   const A = D.assumptions, END_S = A.endurance_min * 60;
   const $ = id => document.getElementById(id);
   const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const col = n => new THREE.Color(css(n));
   const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   let scenIdx = Math.max(0, D.scenarios.findIndex(s => s.id === "real_learned"));
@@ -222,35 +256,83 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
     return [o[0] + v[0] * tt, o[1] + v[1] * tt];
   }
 
-  // ---------- three.js scene (x = east km, z = -north km, y = up)
+  // ===== renderer, camera, controls   (x = east km, z = -north km, y = up)
   const canvas = $("scene");
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(45, 1, 0.05, 2000);
+  const camera = new THREE.PerspectiveCamera(42, 1, 0.05, 4000);
   const controls = new THREE.OrbitControls(camera, canvas);
   controls.enableDamping = true;
-  controls.maxPolarAngle = Math.PI * 0.48;
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x445566, 0.9));
-  const sun = new THREE.DirectionalLight(0xffffff, 0.6);
-  sun.position.set(-30, 60, 20);
+  controls.dampingFactor = 0.08;
+  controls.maxPolarAngle = Math.PI * 0.47;
+  controls.autoRotateSpeed = 0.35;
+  scene.add(new THREE.HemisphereLight(0xeaf6ff, 0x16323d, 0.85));
+  const sun = new THREE.DirectionalLight(0xfff4e0, 0.85);
+  sun.position.set(-0.6, 1, 0.35);
   scene.add(sun);
+  scene.fog = new THREE.Fog(0xffffff, 100, 400);
 
-  const col = n => new THREE.Color(css(n));
-  const sea = new THREE.Mesh(new THREE.CircleGeometry(1, 96), new THREE.MeshStandardMaterial({ roughness: 0.9, metalness: 0 }));
-  sea.rotation.x = -Math.PI / 2;
-  scene.add(sea);
+  // ===== sky dome
+  const skyMat = new THREE.ShaderMaterial({
+    side: THREE.BackSide, depthWrite: false, fog: false,
+    uniforms: { top: { value: new THREE.Color() }, horizon: { value: new THREE.Color() } },
+    vertexShader: "varying vec3 vP; void main(){ vP = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }",
+    fragmentShader: "uniform vec3 top; uniform vec3 horizon; varying vec3 vP; void main(){ float h = clamp(vP.y*1.6, 0.0, 1.0); gl_FragColor = vec4(mix(horizon, top, pow(h, 0.7)), 1.0); }",
+  });
+  const sky = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 16), skyMat);
+  scene.add(sky);
 
+  // ===== water: a shimmering surface that fades into the horizon haze
+  const waterMat = new THREE.ShaderMaterial({
+    uniforms: {
+      uTime: { value: 0 }, uScale: { value: 1 }, uFogNear: { value: 1 }, uFogFar: { value: 2 },
+      uDeep: { value: new THREE.Color() }, uWater: { value: new THREE.Color() },
+      uFoam: { value: new THREE.Color() }, uHaze: { value: new THREE.Color() },
+    },
+    vertexShader: `
+      varying vec2 vW; varying float vDepth;
+      void main(){
+        vec4 w = modelMatrix * vec4(position, 1.0);
+        vW = w.xz;
+        vec4 mv = viewMatrix * w;
+        vDepth = -mv.z;
+        gl_Position = projectionMatrix * mv;
+      }`,
+    fragmentShader: `
+      uniform float uTime, uScale, uFogNear, uFogFar;
+      uniform vec3 uDeep, uWater, uFoam, uHaze;
+      varying vec2 vW; varying float vDepth;
+      float h(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+      float n(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0-2.0*f);
+        return mix(mix(h(i), h(i+vec2(1,0)), f.x), mix(h(i+vec2(0,1)), h(i+vec2(1,1)), f.x), f.y); }
+      void main(){
+        vec2 p = vW / uScale;
+        float a = n(p*6.0 + vec2(uTime*0.05, uTime*0.03));
+        float b = n(p*17.0 - vec2(uTime*0.08, -uTime*0.04));
+        float c = n(p*45.0 + vec2(uTime*0.15, uTime*0.11));
+        float m = a*0.55 + b*0.3 + c*0.15;
+        vec3 col = mix(uDeep, uWater, smoothstep(0.25, 0.85, m));
+        float glint = smoothstep(0.82, 0.97, c*0.6 + b*0.4);
+        col = mix(col, uFoam, glint*0.18);
+        float fog = smoothstep(uFogNear, uFogFar, vDepth);
+        gl_FragColor = vec4(mix(col, uHaze, fog), 1.0);
+      }`,
+  });
+  const water = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), waterMat);
+  water.rotation.x = -Math.PI / 2;
+  scene.add(water);
+
+  // ===== distance rings on the water
   const gridGroup = new THREE.Group();
   scene.add(gridGroup);
   const circlePts = n => Array.from({ length: n + 1 }, (_, i) => {
     const a = (i / n) * Math.PI * 2;
     return new THREE.Vector3(Math.cos(a), 0, Math.sin(a));
   });
-  const unitCircle = new THREE.BufferGeometry().setFromPoints(circlePts(128));
-  const gridMat = new THREE.LineBasicMaterial({ transparent: true, opacity: 0.55 });
-  // dashes are measured on the unit circle before scaling, so about 60 dashes per ring at any size
-  const rangeMat = new THREE.LineDashedMaterial({ dashSize: 0.06, gapSize: 0.045, transparent: true, opacity: 0.8 });
+  const unitCircle = new THREE.BufferGeometry().setFromPoints(circlePts(160));
+  const gridMat = new THREE.LineBasicMaterial({ transparent: true, opacity: 0.35 });
+  const rangeMat = new THREE.LineDashedMaterial({ dashSize: 0.05, gapSize: 0.035, transparent: true, opacity: 0.85 });
   const rangeRings = [0, 1].map(() => {
     const l = new THREE.Line(unitCircle.clone(), rangeMat);
     l.computeLineDistances();
@@ -259,134 +341,308 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
     return l;
   });
 
-  // cue marker: a cross on the water and a thin post
-  const cue = new THREE.Group();
-  const cueMat = new THREE.LineBasicMaterial();
-  cue.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints([
-    new THREE.Vector3(-1, 0.03, 0), new THREE.Vector3(1, 0.03, 0),
-    new THREE.Vector3(0, 0.03, -1), new THREE.Vector3(0, 0.03, 1),
-    new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 1, 0)]), cueMat));
-  scene.add(cue);
+  // ===== satellite tip marker: light beam plus pulsing rings
+  const tip = new THREE.Group();
+  const beamMat = new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, fog: false, side: THREE.DoubleSide,
+    uniforms: { c: { value: new THREE.Color() } },
+    vertexShader: "varying float vY; void main(){ vY = position.y + 0.5; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }",
+    fragmentShader: "uniform vec3 c; varying float vY; void main(){ gl_FragColor = vec4(c, 0.55*(1.0-vY)); }",
+  });
+  const beam = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 1, 16, 1, true), beamMat);
+  const tipRingMat = new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, side: THREE.DoubleSide });
+  const tipRings = [0, 1, 2].map(() => {
+    const m = new THREE.Mesh(new THREE.RingGeometry(0.92, 1, 64), tipRingMat.clone());
+    m.rotation.x = -Math.PI / 2;
+    tip.add(m);
+    return m;
+  });
+  tip.add(beam);
+  scene.add(tip);
 
-  // boats: one instanced hull, plus wakes as one line-segment buffer
+  // ===== boats: instanced hull + cabin, foam wakes, beacons and ripples when spotted
   const MAX_BOATS = 400, WAKE_N = 10, WAKE_STEP_S = 30;
-  const hull = new THREE.ConeGeometry(0.5, 2.2, 4);
-  hull.rotateZ(-Math.PI / 2);          // point along +x
-  hull.scale(1, 0.45, 0.7);
-  const boatMesh = new THREE.InstancedMesh(hull, new THREE.MeshStandardMaterial({ roughness: 0.6 }), MAX_BOATS);
-  boatMesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(MAX_BOATS * 3), 3);
-  scene.add(boatMesh);
+  const shape = new THREE.Shape();
+  shape.moveTo(-1, -0.32); shape.lineTo(0.45, -0.32);
+  shape.quadraticCurveTo(0.95, -0.25, 1.15, 0); shape.quadraticCurveTo(0.95, 0.25, 0.45, 0.32);
+  shape.lineTo(-1, 0.32); shape.lineTo(-1, -0.32);
+  const hullGeo = new THREE.ExtrudeGeometry(shape, { depth: 0.3, bevelEnabled: false });
+  hullGeo.rotateX(-Math.PI / 2);
+  hullGeo.translate(0, -0.08, 0);
+  const cabinGeo = new THREE.BoxGeometry(0.55, 0.32, 0.42);
+  cabinGeo.translate(-0.25, 0.36, 0);
+  const hullMesh = new THREE.InstancedMesh(hullGeo, new THREE.MeshLambertMaterial(), MAX_BOATS);
+  const cabinMesh = new THREE.InstancedMesh(cabinGeo, new THREE.MeshLambertMaterial(), MAX_BOATS);
+  hullMesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(MAX_BOATS * 3), 3);
+  scene.add(hullMesh, cabinMesh);
+
   const wakeGeo = new THREE.BufferGeometry();
   wakeGeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(MAX_BOATS * (WAKE_N - 1) * 2 * 3), 3));
-  const wakeMat = new THREE.LineBasicMaterial({ transparent: true, opacity: 0.55 });
-  const wakes = new THREE.LineSegments(wakeGeo, wakeMat);
+  wakeGeo.setAttribute("color", new THREE.BufferAttribute(new Float32Array(MAX_BOATS * (WAKE_N - 1) * 2 * 3), 3));
+  const wakes = new THREE.LineSegments(wakeGeo, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.9 }));
   scene.add(wakes);
 
-  // drones (rebuilt when the team or search changes)
-  let droneObjs = [];
+  const beaconGeo = new THREE.BufferGeometry();
+  beaconGeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(MAX_BOATS * 2 * 3), 3));
+  const beaconMat = new THREE.LineBasicMaterial({ transparent: true, opacity: 0.75 });
+  const beacons = new THREE.LineSegments(beaconGeo, beaconMat);
+  scene.add(beacons);
+
+  const RIPPLES = 48;
+  const rippleMat = new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, side: THREE.DoubleSide });
+  const ripples = Array.from({ length: RIPPLES }, () => {
+    const m = new THREE.Mesh(new THREE.RingGeometry(0.85, 1, 48), rippleMat.clone());
+    m.rotation.x = -Math.PI / 2;
+    m.visible = false;
+    scene.add(m);
+    return m;
+  });
+
+  // ===== drones: small fixed-wing aircraft with a camera cone and a scanning footprint
+  let drones = [];
   const droneGroup = new THREE.Group();
   scene.add(droneGroup);
+  function makePlane(color) {
+    const g = new THREE.Group();
+    const body = new THREE.MeshLambertMaterial({ color });
+    const light = new THREE.MeshLambertMaterial({ color: 0xf3f6f7 });
+    const fus = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.11, 1.6, 12), light);
+    fus.rotation.z = Math.PI / 2;
+    const nose = new THREE.Mesh(new THREE.ConeGeometry(0.11, 0.35, 12), light);
+    nose.rotation.z = -Math.PI / 2; nose.position.x = 0.97;
+    const wing = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.035, 2.6), body);
+    wing.position.x = 0.12;
+    const tail = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.03, 0.85), body);
+    tail.position.x = -0.72;
+    const fin = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.38, 0.03), body);
+    fin.position.set(-0.74, 0.19, 0);
+    const prop = new THREE.Mesh(new THREE.CircleGeometry(0.22, 20),
+      new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.25, side: THREE.DoubleSide }));
+    prop.rotation.y = Math.PI / 2; prop.position.x = -0.82;
+    g.add(fus, nose, wing, tail, fin, prop);
+    return g;
+  }
+  const coneVS = "uniform float uH; varying float vY; void main(){ vY = position.y / uH + 0.5; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }";
+  const coneFS = `uniform vec3 c; uniform float uTime; varying float vY;
+    void main(){
+      float base = mix(0.32, 0.03, vY);
+      float scan = smoothstep(0.06, 0.0, abs(fract(uTime*0.45) - (1.0 - vY))) * 0.35;
+      gl_FragColor = vec4(c, base + scan);
+    }`;
+  const footFS = `uniform vec3 c; uniform float uTime; varying vec2 vUv;
+    void main(){
+      float r = length(vUv - 0.5) * 2.0;
+      float edge = smoothstep(0.86, 0.97, r) * smoothstep(1.0, 0.97, r);
+      float pulse = smoothstep(0.05, 0.0, abs(r - fract(uTime*0.6))) * 0.35;
+      float fill = 0.16 * (1.0 - r);
+      gl_FragColor = vec4(c, clamp(edge*0.95 + pulse + fill, 0.0, 1.0) * step(r, 1.0));
+    }`;
+  const footVS = "varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }";
 
-  let R = 10, alt = 1;   // view radius and (exaggerated) flying height, km
+  // ===== HTML labels that follow 3D points
+  const labelLayer = $("labels");
+  const tags = [];
+  function tag(text, cls) {
+    const el = document.createElement("div");
+    el.className = `tag ${cls || ""}`;
+    el.textContent = text;
+    labelLayer.appendChild(el);
+    const t = { el, pos: new THREE.Vector3(), on: true };
+    tags.push(t);
+    return t;
+  }
+  const tipTag = tag("Satellite tip", "tip");
+  let kmTags = [], droneTags = [];
+  const v3 = new THREE.Vector3();
+  function placeTags() {
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    for (const t of tags) {
+      if (!t.on) { t.el.hidden = true; continue; }
+      v3.copy(t.pos).project(camera);
+      const vis = v3.z < 1 && Math.abs(v3.x) < 1.05 && Math.abs(v3.y) < 1.05;
+      t.el.hidden = !vis;
+      if (vis) { t.el.style.left = `${(v3.x + 1) / 2 * w}px`; t.el.style.top = `${(1 - v3.y) / 2 * h}px`; }
+    }
+  }
+
+  // ===== world layout for the current scenario / age / search
+  let R = 10, alt = 1, size = 0.1;
   function viewRadius() {
     let r = 4;
     const T = total();
     for (let i = 0; i < nB(); i++) { const p = boatAt(i, T); r = Math.max(r, Math.hypot(p[0], p[1])); }
     for (const path of run().paths) for (const p of path) r = Math.max(r, Math.hypot(p[0], p[1]));
-    return Math.min(r * 1.08, 400);
+    return Math.min(r * 1.06, 400);
   }
   function ringStep(r) { for (const s of [1, 2, 5, 10, 20, 50]) if (r / s <= 5) return s; return 100; }
 
   function buildWorld() {
     R = viewRadius();
-    alt = Math.max(0.6, R * 0.05);
-    sea.scale.setScalar(R * 1.6);
+    alt = Math.max(0.7, R * 0.075);
+    size = R * 0.0085;
+    water.scale.setScalar(R * 12);
+    sky.scale.setScalar(R * 14);
+    waterMat.uniforms.uScale.value = R * 0.9;
+    camera.far = R * 40; camera.near = R * 0.002; camera.updateProjectionMatrix();
+
     gridGroup.clear();
+    kmTags.forEach(t => { t.el.remove(); tags.splice(tags.indexOf(t), 1); });
+    kmTags = [];
     const step = ringStep(R);
-    for (let r = step; r <= R * 1.5; r += step) {
+    for (let r = step; r <= R * 1.25; r += step) {
       const l = new THREE.Line(unitCircle, gridMat);
-      l.scale.setScalar(r); l.position.y = 0.01;
+      l.scale.setScalar(r); l.position.y = 0.012;
       gridGroup.add(l);
+      const kt = tag(`${r} km`, "km");
+      kt.pos.set(r * Math.cos(-0.6), 0.02, -r * Math.sin(-0.6));
+      kmTags.push(kt);
     }
-    cue.scale.set(R * 0.03, alt * 0.9, R * 0.03);
-    const s = R * 0.011;
-    boatMesh.userData.size = s;
-    $("corner").textContent = `rings every ${step} km · height ×${Math.round(alt / 0.15)}`;
+
+    beam.scale.set(R * 0.004, alt * 2.2, R * 0.004);
+    beam.position.y = alt * 1.1;
+    tipTag.pos.set(0, alt * 2.25, 0);
+
+    $("corner").textContent = `rings every ${step} km · boats, drones and height not to scale`;
     $("ringkey").hidden = isReal();
 
     droneGroup.clear();
+    droneTags.forEach(t => { t.el.remove(); tags.splice(tags.indexOf(t), 1); });
+    droneTags = [];
     const c = col(META[stratKey].c);
-    droneObjs = run().paths.map(path => {
+    drones = run().paths.map((path, j) => {
       const g = new THREE.Group();
-      const body = new THREE.Mesh(new THREE.OctahedronGeometry(R * 0.012), new THREE.MeshStandardMaterial({ color: c, roughness: 0.4 }));
-      const arm = new THREE.Mesh(new THREE.BoxGeometry(R * 0.04, R * 0.003, R * 0.006), new THREE.MeshStandardMaterial({ color: c }));
-      const arm2 = arm.clone(); arm2.rotation.y = Math.PI / 2;
-      g.add(body, arm, arm2);
-      const cone = new THREE.Mesh(new THREE.ConeGeometry(A.sweep_radius_km, alt, 40, 1, true),
-        new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: 0.16, side: THREE.DoubleSide, depthWrite: false }));
-      cone.position.y = -alt / 2;
-      const foot = new THREE.Mesh(new THREE.CircleGeometry(A.sweep_radius_km, 48),
-        new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: 0.28, depthWrite: false }));
-      foot.rotation.x = -Math.PI / 2; foot.position.y = -alt + 0.015;
-      g.add(cone, foot);
+      const plane = makePlane(c);
+      plane.scale.setScalar(R * 0.022);
+      g.add(plane);
+      const coneMat = new THREE.ShaderMaterial({
+        transparent: true, depthWrite: false, side: THREE.DoubleSide, fog: false,
+        uniforms: { c: { value: c }, uTime: { value: 0 }, uH: { value: alt } },
+        vertexShader: coneVS, fragmentShader: coneFS,
+      });
+      const cone = new THREE.Mesh(new THREE.ConeGeometry(A.sweep_radius_km, alt, 48, 1, true), coneMat);
+      const footMat = new THREE.ShaderMaterial({
+        transparent: true, depthWrite: false, fog: false,
+        uniforms: { c: { value: c }, uTime: { value: 0 } },
+        vertexShader: footVS, fragmentShader: footFS,
+      });
+      const foot = new THREE.Mesh(new THREE.PlaneGeometry(A.sweep_radius_km * 2, A.sweep_radius_km * 2), footMat);
+      foot.rotation.x = -Math.PI / 2;
       const trailGeo = new THREE.BufferGeometry();
       trailGeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array((path.length + 2) * 3), 3));
-      const trail = new THREE.Line(trailGeo, new THREE.LineBasicMaterial({ color: c }));
+      const trail = new THREE.Line(trailGeo, new THREE.LineBasicMaterial({ color: c, transparent: true, opacity: 0.9 }));
       const shadowGeo = new THREE.BufferGeometry();
       shadowGeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array((path.length + 2) * 3), 3));
-      const shadow = new THREE.Line(shadowGeo, new THREE.LineBasicMaterial({ color: c, transparent: true, opacity: 0.35 }));
-      droneGroup.add(g, trail, shadow);
-      return { path, g, trail, shadow };
+      const shadow = new THREE.Line(shadowGeo, new THREE.LineBasicMaterial({ color: c, transparent: true, opacity: 0.3 }));
+      droneGroup.add(g, cone, foot, trail, shadow);
+      const dt = tag(run().paths.length > 1 ? `Drone ${j + 1}` : "Drone");
+      droneTags.push(dt);
+      return { path, g, plane, cone, foot, trail, shadow, coneMat, footMat, tag: dt };
     });
     applyTheme();
   }
 
-  function resetView() {
-    controls.target.set(0, 0, 0);
-    camera.position.set(-R * 0.55, R * 1.05, R * 1.25);
-    camera.near = R * 0.002; camera.far = R * 20; camera.updateProjectionMatrix();
+  function homePose() {
+    return { target: new THREE.Vector3(0, 0, 0), pos: new THREE.Vector3(-R * 0.62, R * 0.78, R * 1.12) };
+  }
+  let intro = null;
+  function resetView(animate) {
+    const h = homePose();
+    if (animate && !reduced) {
+      intro = { t0: performance.now(), dur: 1800,
+                fromPos: new THREE.Vector3(-R * 1.6, R * 2.4, R * 2.6), toPos: h.pos,
+                fromT: new THREE.Vector3(0, 0, 0), toT: h.target };
+      camera.position.copy(intro.fromPos);
+    } else {
+      intro = null;
+      camera.position.copy(h.pos);
+    }
+    controls.target.copy(h.target);
     controls.update();
   }
 
   function applyTheme() {
-    scene.background = col("--sea-deep");
-    sea.material.color = col("--sea");
+    const haze = col("--sky-horizon");
+    skyMat.uniforms.top.value = col("--sky-top");
+    skyMat.uniforms.horizon.value = haze;
+    waterMat.uniforms.uDeep.value = col("--water-deep");
+    waterMat.uniforms.uWater.value = col("--water");
+    waterMat.uniforms.uFoam.value = col("--foam");
+    waterMat.uniforms.uHaze.value = haze;
+    waterMat.uniforms.uFogNear.value = R * 1.4;
+    waterMat.uniforms.uFogFar.value = R * 5.5;
+    scene.fog.color = haze; scene.fog.near = R * 1.6; scene.fog.far = R * 7;
+    scene.background = haze;
     gridMat.color = col("--grid");
-    rangeMat.color = col("--ink-2");
-    cueMat.color = col("--ink");
-    wakeMat.color = col("--wake");
+    rangeMat.color = col("--foam");
+    beamMat.uniforms.c.value = col("--tip");
+    tipRings.forEach(r => r.material.color = col("--tip"));
+    cabinMesh.material.color = col("--cabin");
+    beaconMat.color = col(META[stratKey].c);
+    ripples.forEach(r => r.material.color = col(META[stratKey].c));
   }
 
+  // ===== per-time update (boats, drones, HUD)
   const tmp = new THREE.Object3D();
-  const cBoat = new THREE.Color(), cSeen = new THREE.Color();
+  const cBoat = new THREE.Color(), cSeen = new THREE.Color(), cFoam = new THREE.Color(), cWater = new THREE.Color();
   function draw() {
-    const tt = t, s = tt - arrival(), r = run(), n = nB(), size = boatMesh.userData.size;
+    const tt = t, s = tt - arrival(), r = run(), n = nB();
     cBoat.copy(col("--boat")); cSeen.copy(col(META[stratKey].c));
-    let found = 0;
-    const wp = wakeGeo.attributes.position.array;
+    cFoam.copy(col("--foam")); cWater.copy(col("--water"));
+    let found = 0, nRipple = 0;
+    const wp = wakeGeo.attributes.position.array, wc = wakeGeo.attributes.color.array;
+    const bp = beaconGeo.attributes.position.array;
+    let nBeacon = 0;
     for (let i = 0; i < MAX_BOATS; i++) {
-      if (i >= n) { tmp.scale.setScalar(0); tmp.updateMatrix(); boatMesh.setMatrixAt(i, tmp.matrix); continue; }
+      if (i >= n) {
+        tmp.scale.setScalar(0); tmp.updateMatrix();
+        hullMesh.setMatrixAt(i, tmp.matrix); cabinMesh.setMatrixAt(i, tmp.matrix);
+        continue;
+      }
       const p = boatAt(i, tt), q = boatAt(i, Math.max(0, tt - 20));
-      const seen = s >= 0 && r.found_s[i] !== null && r.found_s[i] <= s;
+      const fs = r.found_s[i];
+      const seen = s >= 0 && fs !== null && fs <= s;
       if (seen) found++;
-      tmp.position.set(p[0], size * 0.25, -p[1]);
       const dx = p[0] - q[0], dy = p[1] - q[1];
+      tmp.position.set(p[0], 0, -p[1]);
       tmp.rotation.set(0, Math.hypot(dx, dy) > 1e-6 ? Math.atan2(dy, dx) : 0, 0);
-      tmp.scale.setScalar(size * (seen ? 1.5 : 1));
+      tmp.scale.setScalar(size * (seen ? 1.35 : 1));
       tmp.updateMatrix();
-      boatMesh.setMatrixAt(i, tmp.matrix);
-      boatMesh.setColorAt(i, seen ? cSeen : cBoat);
+      hullMesh.setMatrixAt(i, tmp.matrix);
+      cabinMesh.setMatrixAt(i, tmp.matrix);
+      hullMesh.setColorAt(i, seen ? cSeen : cBoat);
       for (let k = 0; k < WAKE_N - 1; k++) {
         const a = boatAt(i, Math.max(0, tt - k * WAKE_STEP_S)), b = boatAt(i, Math.max(0, tt - (k + 1) * WAKE_STEP_S));
         const o = ((i * (WAKE_N - 1)) + k) * 6;
         wp[o] = a[0]; wp[o + 1] = 0.01; wp[o + 2] = -a[1];
         wp[o + 3] = b[0]; wp[o + 4] = 0.01; wp[o + 5] = -b[1];
+        const f0 = 1 - k / (WAKE_N - 1), f1 = 1 - (k + 1) / (WAKE_N - 1);
+        wc[o] = cWater.r + (cFoam.r - cWater.r) * f0; wc[o + 1] = cWater.g + (cFoam.g - cWater.g) * f0; wc[o + 2] = cWater.b + (cFoam.b - cWater.b) * f0;
+        wc[o + 3] = cWater.r + (cFoam.r - cWater.r) * f1; wc[o + 4] = cWater.g + (cFoam.g - cWater.g) * f1; wc[o + 5] = cWater.b + (cFoam.b - cWater.b) * f1;
+      }
+      if (seen) {
+        const o = nBeacon * 6;
+        bp[o] = p[0]; bp[o + 1] = size * 0.5; bp[o + 2] = -p[1];
+        bp[o + 3] = p[0]; bp[o + 4] = alt * 0.45; bp[o + 5] = -p[1];
+        nBeacon++;
+        const age = s - fs;
+        if (age < 90 && nRipple < RIPPLES) {
+          const m = ripples[nRipple++], k = age / 90;
+          m.visible = true;
+          m.position.set(p[0], 0.03, -p[1]);
+          m.scale.setScalar(size * (1.5 + k * 9));
+          m.material.opacity = 0.85 * (1 - k);
+        }
       }
     }
+    for (let j = nRipple; j < RIPPLES; j++) ripples[j].visible = false;
     wakeGeo.setDrawRange(0, n * (WAKE_N - 1) * 2);
     wakeGeo.attributes.position.needsUpdate = true;
-    boatMesh.instanceMatrix.needsUpdate = true;
-    boatMesh.instanceColor.needsUpdate = true;
+    wakeGeo.attributes.color.needsUpdate = true;
+    beaconGeo.setDrawRange(0, nBeacon * 2);
+    beaconGeo.attributes.position.needsUpdate = true;
+    hullMesh.instanceMatrix.needsUpdate = true;
+    cabinMesh.instanceMatrix.needsUpdate = true;
+    hullMesh.instanceColor.needsUpdate = true;
 
     const vmin = isReal() ? 0 : scen().truth_kn[0] * KNOT_KMS, vmax = isReal() ? 0 : scen().truth_kn[1] * KNOT_KMS;
     [vmin * tt, vmax * tt].forEach((rad, j) => {
@@ -394,12 +650,22 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
       rangeRings[j].scale.setScalar(Math.max(rad, 1e-3));
     });
 
-    for (const d of droneObjs) {
+    for (const d of drones) {
       const active = s >= 0;
-      d.g.visible = d.trail.visible = d.shadow.visible = active;
+      d.g.visible = d.cone.visible = d.foot.visible = d.trail.visible = d.shadow.visible = active;
+      d.tag.on = active;
       if (!active) continue;
       const here = pointAt(d.path, s, D.path_every_s);
+      const prev = pointAt(d.path, Math.max(0, s - 12), D.path_every_s);
+      const prev2 = pointAt(d.path, Math.max(0, s - 24), D.path_every_s);
+      const hd = Math.atan2(here[1] - prev[1], here[0] - prev[0]);
+      const hd2 = Math.atan2(prev[1] - prev2[1], prev[0] - prev2[0]);
+      let turn = hd - hd2; turn = Math.atan2(Math.sin(turn), Math.cos(turn));
       d.g.position.set(here[0], alt, -here[1]);
+      d.plane.rotation.set(Math.max(-0.6, Math.min(0.6, -turn * 4)), Math.hypot(here[0] - prev[0], here[1] - prev[1]) > 1e-6 ? hd : d.plane.rotation.y, 0, "YXZ");
+      d.cone.position.set(here[0], alt / 2, -here[1]);
+      d.foot.position.set(here[0], 0.025, -here[1]);
+      d.tag.pos.set(here[0], alt + R * 0.03, -here[1]);
       const m = Math.min(Math.floor(s / D.path_every_s), d.path.length - 1);
       const tp = d.trail.geometry.attributes.position.array, sp = d.shadow.geometry.attributes.position.array;
       for (let i = 0; i <= m; i++) {
@@ -411,8 +677,8 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
       d.trail.geometry.setDrawRange(0, m + 2); d.trail.geometry.attributes.position.needsUpdate = true;
       d.shadow.geometry.setDrawRange(0, m + 2); d.shadow.geometry.attributes.position.needsUpdate = true;
     }
-    if (follow && droneObjs.length && s >= 0) {
-      const g = droneObjs[0].g.position, dx = g.x - controls.target.x, dz = g.z - controls.target.z;
+    if (follow && drones.length && s >= 0) {
+      const g = drones[0].g.position, dx = g.x - controls.target.x, dz = g.z - controls.target.z;
       controls.target.x += dx; controls.target.z += dz;
       camera.position.x += dx; camera.position.z += dz;
     }
@@ -426,6 +692,8 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
     else { ph.dataset.phase = "done"; $("phasetxt").textContent = "Battery out · search over"; }
     $("nfound").textContent = found;
     $("nof").textContent = `of ${n} boats found (${Math.round(100 * found / n)}%)`;
+    $("meter").style.width = `${100 * found / n}%`;
+    $("meter").style.background = `var(${META[stratKey].c})`;
     $("scrub").value = Math.round(1000 * tt / total());
   }
 
@@ -437,6 +705,7 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
   }
   new ResizeObserver(resize).observe(canvas);
 
+  const ease = x => 1 - Math.pow(1 - x, 3);
   function loop(ts) {
     if (playing) {
       if (last !== null) {
@@ -446,12 +715,27 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
       last = ts;
       draw();
     } else last = null;
+    const sec = reduced ? 0 : ts / 1000;
+    waterMat.uniforms.uTime.value = sec;
+    for (const d of drones) { d.coneMat.uniforms.uTime.value = sec; d.footMat.uniforms.uTime.value = sec; }
+    tipRings.forEach((m, i) => {
+      const k = reduced ? (i + 1) / 3 : ((sec * 0.35 + i / 3) % 1);
+      m.scale.setScalar(R * (0.01 + 0.05 * k));
+      m.position.y = 0.03;
+      m.material.opacity = 0.9 * (1 - k);
+    });
+    if (intro) {
+      const k = Math.min(1, (ts - intro.t0) / intro.dur), e = ease(k);
+      camera.position.lerpVectors(intro.fromPos, intro.toPos, e);
+      if (k >= 1) intro = null;
+    }
     controls.update();
     renderer.render(scene, camera);
+    placeTags();
     requestAnimationFrame(loop);
   }
 
-  // ---------- controls
+  // ===== controls
   function seg(container, labels, current, onPick) {
     container.innerHTML = "";
     labels.forEach(([id, text], i) => {
@@ -470,11 +754,11 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
     if (!keys.includes(stratKey)) stratKey = keys.includes("greedy_shared") ? "greedy_shared" : keys.includes("probability_greedy") ? "probability_greedy" : keys[0];
     $("strat").innerHTML = keys.map(k => `<option value="${k}"${k === stratKey ? " selected" : ""}>${META[k][mode().drones]}</option>`).join("");
   }
-  function rebuild(keepView) {
+  function rebuild(keepView, animate) {
     playing = false;
     fillStrategies();
     buildWorld();
-    if (!keepView) resetView();
+    if (!keepView) resetView(animate);
     setTime(Math.min(arrival() + 20 * 60, total()));
   }
   function setTime(v) { t = Math.max(0, Math.min(v, total())); draw(); }
@@ -495,14 +779,22 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
     else { $("pause").textContent = "Pause"; if (t >= total()) t = 0; playing = !reduced; }
   });
   $("scrub").addEventListener("input", e => { playing = false; setTime(total() * e.target.value / 1000); });
-  $("reset").addEventListener("click", () => { follow = false; $("follow").setAttribute("aria-pressed", "false"); resetView(); });
+  $("reset").addEventListener("click", () => {
+    follow = false; $("follow").setAttribute("aria-pressed", "false");
+    resetView(false);
+  });
+  $("orbit").addEventListener("click", () => {
+    controls.autoRotate = !controls.autoRotate;
+    $("orbit").setAttribute("aria-pressed", String(controls.autoRotate));
+  });
   $("follow").addEventListener("click", () => {
     follow = !follow;
     $("follow").setAttribute("aria-pressed", String(follow));
-    if (follow && droneObjs.length) {
-      const g = droneObjs[0].g.position;
+    if (follow && drones.length) {
+      intro = null;
+      const g = drones[0].g.position;
       controls.target.set(g.x, 0, g.z);
-      camera.position.set(g.x - R * 0.12, R * 0.22, g.z + R * 0.28);
+      camera.position.set(g.x - R * 0.14, R * 0.26, g.z + R * 0.32);
     }
     draw();
   });
@@ -511,7 +803,7 @@ input[type="range"] { width: 100%; accent-color: var(--ink); }
   new MutationObserver(retheme).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 
   resize();
-  rebuild();
+  rebuild(false, true);
   requestAnimationFrame(loop);
 })();
 </script>
