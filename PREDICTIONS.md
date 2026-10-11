@@ -513,3 +513,15 @@ I guessed 85 / 60 / 45. Close at 30 and 60 min; 10 min came out higher.
   matters as much. That's exactly what to ask patrol people and what data to collect.
 - Still to check: fast boats with a learned guess, more test days, and boats that are
   actually trying to escape (no public data for that).
+
+---
+
+## Experiment 18: F10s on real fishing paths (demo page numbers) (2026-10-11)
+
+Three F10-like drones (45 m/s, 60 min), 10 min tip, real Jan 1 fishing paths, smart
+search with the learned guess (Jan 2–3 tracks) vs the standard spiral. These are the
+numbers the demo page's results chart shows (1000 boats per point, export_demo.py).
+
+### My prediction (my words)
+
+"40% smart, 34% spiral."
