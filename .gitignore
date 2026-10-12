@@ -4,3 +4,5 @@ __pycache__/
 .DS_Store
 results_*/
 data/
+flights/*/video.mp4
+tello_plans.png

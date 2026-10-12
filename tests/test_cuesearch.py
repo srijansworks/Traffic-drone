@@ -351,6 +351,28 @@ def test_night_camera():
           not all(np.allclose(a.xy, b.xy) for a, b in zip(day_plan, night_plan)))
 
 
+def test_tello_lookpoints():
+    print("Tello look-point plans")
+    from cuesearch.lookpoints import (Room, TelloSpec, find_times, plan_time, sample_targets,
+                                      smart_plan, spiral_plan)
+    room, spec = Room(), TelloSpec()
+    tg = sample_targets(2000, np.random.default_rng(1), room)
+    r = np.linalg.norm(tg, axis=1)
+    check("box spots are 0.8-2.0 m from the tip and inside the room",
+          r.min() >= 0.8 - 1e-9 and r.max() <= 2.0 + 1e-9 and room.inside(tg).all())
+    for name, pts in (("spiral", spiral_plan(room, spec, 70)), ("smart", smart_plan(room, spec, 70))):
+        p = np.array(pts)
+        check(f"{name}: every look point is inside the room", len(p) > 0 and room.inside(p).all())
+        check(f"{name}: fits the time budget", plan_time(pts, spec) <= 70 + 1e-9, f"{plan_time(pts, spec):.1f}")
+        legs = np.linalg.norm(np.diff(np.vstack([[0, 0], p]), axis=0), axis=1)
+        check(f"{name}: no move shorter than the Tello allows", legs.min() >= spec.min_leg_m - 1e-9)
+    one = np.array([[1.0, 0.0], [2.0, 0.0]])
+    ft = find_times([(1.0, 0.5)], one, spec)
+    expect = np.hypot(1.0, 0.5) / spec.speed_ms + spec.move_overhead_s + spec.spin_s
+    check("a box within range of a scan is found when that scan ends", abs(ft[0] - expect) < 1e-9)
+    check("a box out of range is missed", np.isinf(ft[1]))
+
+
 def test_wilson():
     print("confidence interval")
     lo, hi = wilson(0, 10)
@@ -371,6 +393,7 @@ if __name__ == "__main__":
     test_team()
     test_combos()
     test_track_boats_match_straight_lines()
+    test_tello_lookpoints()
     test_night_camera()
     test_intercept()
     test_fab()
