@@ -674,3 +674,17 @@ I guessed 35% and 40%. Both too high, and being night-aware didn't help at all.
   keep moving away, going back to look again rarely pays off; new water is almost always
   a better bet. So the fix for night is a better camera (range), not a smarter plan.
 - The real thermal range for a small boat is now the most important number to get.
+
+---
+
+## Experiment 25: relief drones keep watching (2026-10-11)
+
+Same as experiment 23 (three F10s, smart shared map, 10–30 kn boats, 10 min tip, patrol
+20 km away at 25 kn, heads to the tip right away), but relief drones keep watching the
+found boat for 2 more hours after the search drones' batteries run out. Without them:
+31.9% of all boats caught (search finds 51.8%).
+
+### My prediction (my words)
+
+"45%, then do the tello demo"
+(45% of all boats caught.)
