@@ -688,3 +688,20 @@ found boat for 2 more hours after the search drones' batteries run out. Without 
 
 "45%, then do the tello demo"
 (45% of all boats caught.)
+
+### Actual (2026-10-11)
+
+| | Found | Caught, no relief | Caught, 2 h relief (head to tip) | (wait) |
+|---|---|---|---|---|
+| Smart, shared map | 51.8% | 31.9% | 45.4% | 46.5% |
+
+I guessed 45%. Actual 45.4%. Basically spot on.
+
+### What I learned
+
+- Relief drones fixed most of the problem: the patrol now catches 88% of the boats the
+  search finds (45.4 / 51.8), up from 62%.
+- The rest that escape are mostly the boats faster than the 25 kn patrol.
+- With relief drones, heading to the tip early doesn't help at all (46.5 waiting vs 45.4).
+- So the full system needs: a smart search to find, relief drones to keep watching, and a
+  patrol boat fast enough. Ask Skydio whether one drone can hand off tracking to another.
