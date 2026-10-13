@@ -705,3 +705,23 @@ I guessed 45%. Actual 45.4%. Basically spot on.
 - With relief drones, heading to the tip early doesn't help at all (46.5 waiting vs 45.4).
 - So the full system needs: a smart search to find, relief drones to keep watching, and a
   patrol boat fast enough. Ask Skydio whether one drone can hand off tracking to another.
+
+---
+
+## Experiment 26: where does a dark boat end up? (Global Fishing Watch AIS-disabling data) (2026-10-12)
+
+Data: Welch et al. 2022 suspected intentional AIS disabling events (fishing vessels,
+12+ h gaps, 50+ nm offshore, 2017–2019). Only the point where the boat went dark and the
+point where it reappeared are known. Test on 2019 gaps of 12–24 h; learn from 2017–2018.
+Each method places the same search area (~970 km², what three F10s sweep in an hour)
+where it thinks the boat most likely is, centred on where it went dark. Score: % of 2019
+boats whose reappearance point is inside that area.
+1. Baseline: a circle around the last known position.
+2. Current sim guess: straight lines at 10–30 kn.
+3. Learned: net speeds from 2017–18 gaps, by vessel class, scaled by gap length.
+Tests only the motion guess, not the flight plan (see limitation in the results).
+
+### My prediction (my words)
+
+"23% 15% 18 %"
+(1: circle 23%. 2: straight-line 10–30 kn 15%. 3: learned 18%.)
