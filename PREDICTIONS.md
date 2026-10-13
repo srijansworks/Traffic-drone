@@ -725,3 +725,31 @@ Tests only the motion guess, not the flight plan (see limitation in the results)
 
 "23% 15% 18 %"
 (1: circle 23%. 2: straight-line 10–30 kn 15%. 3: learned 18%.)
+
+### Actual (2026-10-12)
+
+10,220 test gaps (2019, 12–24 h); learned from 17,927 gaps (2017–18); search area 972 km²
+(a circle of radius 17.6 km). Test boats ended a median 44.6 km from where they went dark.
+
+| Motion guess | Caught | 95% CI | My guess |
+|---|---|---|---|
+| Circle around last position | 25.4% | 24.5–26.2% | 23% |
+| Straight lines 10–30 kn (the sim's assumption) | 0.0% | 0.0–0.1% | 15% |
+| Learned from 2017–18, by vessel class | 24.5% | 23.7–25.3% | 18% |
+
+### What I learned
+
+- The sim's straight-line 10–30 kn guess fails completely for these boats (0%): over
+  12–24 h it puts them 220+ km away, but they really end up a median 45 km away. Dark
+  fishing boats mostly loiter and fish; they don't run.
+- Learning from past gaps fixes that, but only ties the plain circle (24.5 vs 25.4). With
+  no idea which DIRECTION the boat went, the likeliest place is just close to where it
+  vanished, which is exactly what a circle covers.
+- So the smart search's edge needs direction (or speed) information at the tip. A real
+  tip would have the boat's track before it went dark; this file doesn't. That's the
+  missing ingredient, and GFW's raw tracks (by data agreement) would have it.
+- Limitation: this tests only the motion guess, not the flight plan. It assumes the
+  drones cover the chosen area perfectly and the boat stays put during the 1-hour search.
+  It uses 12–24 h old tips on large fishing vessels with AIS before and after going
+  dark, so it says nothing about small boats, smugglers, boats without AIS, or tips
+  minutes old. Where a boat reappears may be chosen by the boat.

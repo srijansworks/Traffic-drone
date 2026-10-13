@@ -373,6 +373,19 @@ def test_tello_lookpoints():
     check("a box out of range is missed", np.isinf(ft[1]))
 
 
+def test_dark_gap_rings():
+    print("dark-gap search area")
+    from dark_gaps_sim import best_rings
+    r = np.full(500, 50.0) + np.random.default_rng(0).normal(0, 0.3, 500)
+    inside = best_rings(r, np.ones(500), 300.0)
+    check("guesses all ~50 km away: the area goes to the 50 km ring, not the centre",
+          bool(inside(np.array([50.0]))[0]) and not bool(inside(np.array([0.1]))[0]))
+    spread = best_rings(np.random.default_rng(1).uniform(0, 30, 2000), np.ones(2000), 100.0)
+    rr = np.linspace(0, 40, 4001)
+    used = np.sum(np.pi * ((rr[1:]) ** 2 - rr[:-1] ** 2)[spread(rr[:-1] + 1e-6)])
+    check("never uses more area than allowed", used <= 100.0 + 1.0, f"{used:.1f}")
+
+
 def test_wilson():
     print("confidence interval")
     lo, hi = wilson(0, 10)
@@ -393,6 +406,7 @@ if __name__ == "__main__":
     test_team()
     test_combos()
     test_track_boats_match_straight_lines()
+    test_dark_gap_rings()
     test_tello_lookpoints()
     test_night_camera()
     test_intercept()
